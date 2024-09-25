@@ -1,0 +1,44 @@
+<.header>
+  Listing Players
+  <:actions>
+    <.link patch={~p"/players/new"}>
+      <.button>New Player</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.table
+  id="players"
+  rows={@streams.players}
+  row_click={fn {_id, player} -> JS.navigate(~p"/players/#{player}") end}
+>
+  <:col :let={{_id, player}} label="Name"><%= player.name %></:col>
+  <:col :let={{_id, player}} label="Chip count"><%= player.chip_count %></:col>
+  <:col :let={{_id, player}} label="Hands played"><%= player.hands_played %></:col>
+  <:col :let={{_id, player}} label="Hands won"><%= player.hands_won %></:col>
+  <:action :let={{_id, player}}>
+    <div class="sr-only">
+      <.link navigate={~p"/players/#{player}"}>Show</.link>
+    </div>
+    <.link patch={~p"/players/#{player}/edit"}>Edit</.link>
+  </:action>
+  <:action :let={{id, player}}>
+    <.link
+      phx-click={JS.push("delete", value: %{id: player.id}) |> hide("##{id}")}
+      data-confirm="Are you sure?"
+    >
+      Delete
+    </.link>
+  </:action>
+</.table>
+
+<.modal :if={@live_action in [:new, :edit]} id="player-modal" show on_cancel={JS.patch(~p"/players")}>
+  <.live_component
+    module={BlackjackWeb.PlayerLive.FormComponent}
+    id={@player.id || :new}
+    title={@page_title}
+    action={@live_action}
+    player={@player}
+    patch={~p"/players"}
+  />
+</.modal>

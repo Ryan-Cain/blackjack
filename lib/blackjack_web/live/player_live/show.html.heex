@@ -1,0 +1,29 @@
+<.header>
+  Player <%= @player.id %>
+  <:subtitle>This is a player record from your database.</:subtitle>
+  <:actions>
+    <.link patch={~p"/players/#{@player}/show/edit"} phx-click={JS.push_focus()}>
+      <.button>Edit player</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.list>
+  <:item title="Name"><%= @player.name %></:item>
+  <:item title="Chip count"><%= @player.chip_count %></:item>
+  <:item title="Hands played"><%= @player.hands_played %></:item>
+  <:item title="Hands won"><%= @player.hands_won %></:item>
+</.list>
+
+<.back navigate={~p"/players"}>Back to players</.back>
+
+<.modal :if={@live_action == :edit} id="player-modal" show on_cancel={JS.patch(~p"/players/#{@player}")}>
+  <.live_component
+    module={BlackjackWeb.PlayerLive.FormComponent}
+    id={@player.id}
+    title={@page_title}
+    action={@live_action}
+    player={@player}
+    patch={~p"/players/#{@player}"}
+  />
+</.modal>
