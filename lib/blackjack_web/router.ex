@@ -27,6 +27,15 @@ defmodule BlackjackWeb.Router do
     live "/players/:id/show/edit", PlayerLive.Show, :edit
 
     live "/players/:id/game", PlayerLive.Show, :game
+
+    live "/tables", TableLive.Index, :index
+    live "/tables/new", TableLive.Index, :new
+    live "/tables/:id/edit", TableLive.Index, :edit
+
+    # live "/tables/:id", TableLive.Show, :show
+    # live "/tables/:id/", TableLive.Play, :play
+    live "/tables/:id/players/:user_id", TableLive.Play, :play
+    live "/tables/:id/show/edit", TableLive.Show, :edit
   end
 
   # Other scopes may use custom stacks.

@@ -1,8 +1,8 @@
 <div>
-  <h3><%= @game_state.player_count %></h3>
-  <div class="flex" id="player-cards">
+  <h3><%= @game_state.dealer_count %></h3>
+  <div class="flex" id="dealer-cards">
     <img
-      :for={card <- @game_state.player_cards}
+      :for={card <- @game_state.dealer_cards}
       class="h-52"
       src={"/images/cards/#{card}.png"}
       alt=""
@@ -10,10 +10,10 @@
   </div>
 </div>
 <div>
-  <h3><%= @game_state.dealer_count %></h3>
-  <div class="flex" id="dealer-cards">
+  <h3><%= @game_state.player_count %></h3>
+  <div class="flex" id="player-cards">
     <img
-      :for={card <- @game_state.dealer_cards}
+      :for={card <- @game_state.player_cards}
       class="h-52"
       src={"/images/cards/#{card}.png"}
       alt=""

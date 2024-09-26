@@ -1,0 +1,44 @@
+<.header>
+  Listing Tables
+  <:actions>
+    <.link patch={~p"/tables/new"}>
+      <.button>New Table</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.table
+  id="tables"
+  rows={@streams.tables}
+  row_click={fn {_id, table} -> JS.navigate(~p"/tables/#{table}") end}
+>
+  <:col :let={{_id, table}} label="Name"><%= table.name %></:col>
+  <:col :let={{_id, table}} label="Table min"><%= table.table_min %></:col>
+  <:col :let={{_id, table}} label="Countdown"><%= table.countdown %></:col>
+  <:col :let={{_id, table}} label="Table color"><%= table.table_color %></:col>
+  <:action :let={{_id, table}}>
+    <div class="sr-only">
+      <.link navigate={~p"/tables/#{table}"}>Show</.link>
+    </div>
+    <.link patch={~p"/tables/#{table}/edit"}>Edit</.link>
+  </:action>
+  <:action :let={{id, table}}>
+    <.link
+      phx-click={JS.push("delete", value: %{id: table.id}) |> hide("##{id}")}
+      data-confirm="Are you sure?"
+    >
+      Delete
+    </.link>
+  </:action>
+</.table>
+
+<.modal :if={@live_action in [:new, :edit]} id="table-modal" show on_cancel={JS.patch(~p"/tables")}>
+  <.live_component
+    module={BlackjackWeb.TableLive.FormComponent}
+    id={@table.id || :new}
+    title={@page_title}
+    action={@live_action}
+    table={@table}
+    patch={~p"/tables"}
+  />
+</.modal>

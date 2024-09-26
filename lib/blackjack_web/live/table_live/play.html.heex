@@ -1,0 +1,87 @@
+<h3 :if={@game_state.hand_over and @game_state.player_won}>You beat the dealer!!</h3>
+<h3 :if={@game_state.hand_over and not @game_state.player_won}>House wins!!</h3>
+<div>
+  <h3><%= @game_state.dealer_count %></h3>
+  <div class="flex" id="dealer-cards">
+    <img
+      :for={card <- @game_state.dealer_cards}
+      class="h-52"
+      src={"/images/cards/#{card}.png"}
+      alt=""
+    />
+  </div>
+</div>
+<div>
+  <h3><%= @game_state.player_count %></h3>
+  <div class="flex" id="player-cards">
+    <img
+      :for={card <- @game_state.player_cards}
+      class="h-52"
+      src={"/images/cards/#{card}.png"}
+      alt=""
+    />
+  </div>
+</div>
+<div :if={@game_state.player_bet > 0 and @game_state.bet_placed} id="player-controls">
+  <%= if not @game_state.hand_over do %>
+    <button phx-click="hit-me">Hit Me</button>
+    <button phx-click="stand">Stand</button>
+  <% end %>
+</div>
+<div :if={not @game_state.bet_placed}>
+  <div>
+    <span>Add</span>
+    <button
+      :if={@players.chip_count - @game_state.player_bet >= 5}
+      phx-click="add-to-bet"
+      phx-value-chips="5"
+    >
+      5
+    </button>
+    <button
+      :if={@players.chip_count - @game_state.player_bet >= 25}
+      phx-click="add-to-bet"
+      phx-value-chips="25"
+    >
+      25
+    </button>
+    <button
+      :if={@players.chip_count - @game_state.player_bet >= 100}
+      phx-click="add-to-bet"
+      phx-value-chips="100"
+    >
+      100
+    </button>
+    <button
+      :if={@players.chip_count - @game_state.player_bet >= 500}
+      phx-click="add-to-bet"
+      phx-value-chips="500"
+    >
+      500
+    </button>
+    <button :if={@players.chip_count > @game_state.player_bet} phx-click="all-in">
+      All In
+    </button>
+    <button :if={@game_state.player_bet > 0} phx-click="clear-bet">
+      Clear Bet
+    </button>
+  </div>
+  <div>
+    <span>Remove</span>
+    <button :if={5 <= @game_state.player_bet} phx-click="remove-from-bet" phx-value-chips="5">
+      5
+    </button>
+    <button :if={25 <= @game_state.player_bet} phx-click="remove-from-bet" phx-value-chips="25">
+      25
+    </button>
+    <button :if={100 <= @game_state.player_bet} phx-click="remove-from-bet" phx-value-chips="100">
+      100
+    </button>
+    <button :if={500 <= @game_state.player_bet} phx-click="remove-from-bet" phx-value-chips="500">
+      500
+    </button>
+  </div>
+  <button :if={@game_state.player_bet >= @table.table_min} phx-click="place-bet">
+    Place Bet
+  </button>
+</div>
