@@ -6,6 +6,7 @@ defmodule BlackjackWeb.TableLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
+    IO.inspect(socket.assigns, label: "TABLE INDEX - MOUNT socket.assigns")
     {:ok, stream(socket, :tables, Games.list_tables())}
   end
 

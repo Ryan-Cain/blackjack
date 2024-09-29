@@ -1,12 +1,13 @@
-<header class="text-xl">
+<%!-- <header class="text-xl">
   <div>
-    <%= @table.name %>
+    <span>
+      <%= @current_player.name %> -
+    </span>
+    <span>
+      <%= @current_player.chip_count %> Chips
+    </span>
   </div>
-  <div>
-    <%= @players.chip_count - @game_state.player_bet %>
-  </div>
-  <button phx-click="new-game">New Game</button>
-</header>
+</header> --%>
 <main class="px-4 py-20 sm:px-6 lg:px-8">
   <div class="mx-auto max-w-2xl">
     <.flash_group flash={@flash} />

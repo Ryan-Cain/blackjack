@@ -1,7 +1,7 @@
 defmodule BlackjackWeb.PlayerLive.FormComponent do
   use BlackjackWeb, :live_component
 
-  alias Blackjack.Tables
+  alias Blackjack.Accounts
 
   @impl true
   def render(assigns) do
@@ -37,13 +37,13 @@ defmodule BlackjackWeb.PlayerLive.FormComponent do
      socket
      |> assign(assigns)
      |> assign_new(:form, fn ->
-       to_form(Tables.change_player(player))
+       to_form(Accounts.change_player(player))
      end)}
   end
 
   @impl true
   def handle_event("validate", %{"player" => player_params}, socket) do
-    changeset = Tables.change_player(socket.assigns.player, player_params)
+    changeset = Accounts.change_player(socket.assigns.player, player_params)
     {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
   end
 
@@ -52,7 +52,7 @@ defmodule BlackjackWeb.PlayerLive.FormComponent do
   end
 
   defp save_player(socket, :edit, player_params) do
-    case Tables.update_player(socket.assigns.player, player_params) do
+    case Accounts.update_player(socket.assigns.player, player_params) do
       {:ok, player} ->
         notify_parent({:saved, player})
 
@@ -67,7 +67,7 @@ defmodule BlackjackWeb.PlayerLive.FormComponent do
   end
 
   defp save_player(socket, :new, player_params) do
-    case Tables.create_player(player_params) do
+    case Accounts.create_player(player_params) do
       {:ok, player} ->
         notify_parent({:saved, player})
 

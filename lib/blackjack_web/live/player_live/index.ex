@@ -1,12 +1,14 @@
 defmodule BlackjackWeb.PlayerLive.Index do
   use BlackjackWeb, :live_view
 
-  alias Blackjack.Tables
-  alias Blackjack.Tables.Player
+  alias Blackjack.Accounts
+  alias Blackjack.Accounts.Player
+  # alias Blackjack.Tables
+  # alias Blackjack.Tables.Player
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, stream(socket, :players, Tables.list_players())}
+    {:ok, stream(socket, :players, Accounts.list_players())}
   end
 
   @impl true
@@ -17,7 +19,7 @@ defmodule BlackjackWeb.PlayerLive.Index do
   defp apply_action(socket, :edit, %{"id" => id}) do
     socket
     |> assign(:page_title, "Edit Player")
-    |> assign(:player, Tables.get_player!(id))
+    |> assign(:player, Accounts.get_player!(id))
   end
 
   defp apply_action(socket, :new, _params) do
@@ -39,8 +41,8 @@ defmodule BlackjackWeb.PlayerLive.Index do
 
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
-    player = Tables.get_player!(id)
-    {:ok, _} = Tables.delete_player(player)
+    player = Accounts.get_player!(id)
+    {:ok, _} = Accounts.delete_player(player)
 
     {:noreply, stream_delete(socket, :players, player)}
   end

@@ -31,7 +31,7 @@ defmodule Blackjack.Logic.GameLogic do
     # Get point value of face card, and whether or not its ace high (Ex. if "A" [10, true])
     face_value = get_face_value(card_face, player_count)
     new_player_count = player_count + List.first(face_value)
-    IO.inspect(List.last(face_value))
+    IO.inspect(List.last(face_value), label: "face value")
 
     game_state_add_ace_high =
       if List.last(face_value) do
@@ -150,6 +150,7 @@ defmodule Blackjack.Logic.GameLogic do
       |> Map.put(:dealer_bust, dealer_bust)
       |> Map.put(:player_won, player_won)
       |> Map.put(:hand_over, true)
+      |> Map.put(:player_bet, 0)
     end
   end
 

@@ -10,12 +10,14 @@
 <.table
   id="tables"
   rows={@streams.tables}
-  row_click={fn {_id, table} -> JS.navigate(~p"/tables/#{table}") end}
+  row_click={
+    fn {_id, table} -> JS.navigate(~p"/tables/#{table}/players/#{@current_player.id}") end
+  }
 >
-  <:col :let={{_id, table}} label="Name"><%= table.name %></:col>
-  <:col :let={{_id, table}} label="Table min"><%= table.table_min %></:col>
-  <:col :let={{_id, table}} label="Countdown"><%= table.countdown %></:col>
-  <:col :let={{_id, table}} label="Table color"><%= table.table_color %></:col>
+  <:col :let={{_id, table}} label="Table Name"><%= table.name %></:col>
+  <:col :let={{_id, table}} label="Table Min"><%= table.table_min %></:col>
+  <:col :let={{_id, table}} label="Move Time"><%= table.countdown %></:col>
+  <:col :let={{_id, table}} label="Table Color"><%= table.table_color %></:col>
   <:action :let={{_id, table}}>
     <div class="sr-only">
       <.link navigate={~p"/tables/#{table}"}>Show</.link>
@@ -32,7 +34,12 @@
   </:action>
 </.table>
 
-<.modal :if={@live_action in [:new, :edit]} id="table-modal" show on_cancel={JS.patch(~p"/tables")}>
+<.modal
+  :if={@live_action in [:new, :edit]}
+  id="table-modal"
+  show
+  on_cancel={JS.patch(~p"/tables")}
+>
   <.live_component
     module={BlackjackWeb.TableLive.FormComponent}
     id={@table.id || :new}
