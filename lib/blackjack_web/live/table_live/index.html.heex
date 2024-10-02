@@ -10,9 +10,7 @@
 <.table
   id="tables"
   rows={@streams.tables}
-  row_click={
-    fn {_id, table} -> JS.navigate(~p"/tables/#{table}/players/#{@current_player.id}") end
-  }
+  row_click={fn {_id, table} -> JS.navigate(~p"/tables/#{table}") end}
 >
   <:col :let={{_id, table}} label="Table Name"><%= table.name %></:col>
   <:col :let={{_id, table}} label="Table Min"><%= table.table_min %></:col>

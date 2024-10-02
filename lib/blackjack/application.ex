@@ -12,6 +12,11 @@ defmodule Blackjack.Application do
       Blackjack.Repo,
       {DNSCluster, query: Application.get_env(:blackjack, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Blackjack.PubSub},
+      # Registry to name game room processes
+      {Registry, keys: :unique, name: MyApp.GameRegistry},
+
+      # DynamicSupervisor for managing game room servers
+      {MyApp.GameRoomSupervisor, []},
       # Start the Finch HTTP client for sending emails
       {Finch, name: Blackjack.Finch},
       # Start a worker by calling: Blackjack.Worker.start_link(arg)

@@ -1,111 +1,276 @@
-<div class="text-xl flex justify-between">
-  <div>
-    <div>
-      <%= @table.name %>
+<%!-- Table page includes everthing needed for a game --%>
+<%!-- header is table info, table message, and player account options --%>
+<div
+  id="table-page"
+  class="flex flex-col justify-between"
+  style={"background-color: #{@table.table_color}"}
+>
+  <header class="flex items-center justify-between h-14 mx-4">
+    <div class="flex flex-col">
+      <h3 class="text-4xl"><%= @table.name %></h3>
+      <p>Table minimum: <%= @table.table_min %> chips</p>
     </div>
-    <div>
-      <%= @current_player.chip_count - @game_state.player_bet %>
+    <div id="game-table-msg">
+      <h3>
+        Current Bet: <%= @game_state.player_bet %> chips
+      </h3>
+      <h3 :if={@game_state.hand_over and @game_state.player_won}>You beat the dealer!!</h3>
+      <h3 :if={@game_state.hand_over and not @game_state.player_won}>House wins!!</h3>
     </div>
-    <button phx-click="new-game">New Game</button>
-  </div>
-  <.link href={~p"/tables"}>
-    <button>Leave table</button>
-  </.link>
-</div>
-<div style={"background-color: #{@table.table_color}"}>
-  <h3 :if={@game_state.hand_over and @game_state.player_won}>You beat the dealer!!</h3>
-  <h3 :if={@game_state.hand_over and not @game_state.player_won}>House wins!!</h3>
-  <div>
-    <h3><%= @game_state.dealer_count %></h3>
-    <div class="flex" id="dealer-cards">
-      <img
-        :for={card <- @game_state.dealer_cards}
-        class="h-52"
-        src={"/images/cards/#{card}.png"}
-        alt=""
-      />
+    <div id="player-info">
+      <ul class="relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
+        <%= if @current_player do %>
+          <li class="text-[0.8125rem] leading-6 text-zinc-900">
+            <%= @current_player.email %>
+          </li>
+          <li>
+            <.link
+              href={~p"/players/settings"}
+              class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
+            >
+              Settings
+            </.link>
+          </li>
+          <li>
+            <.link
+              href={~p"/players/log_out"}
+              method="delete"
+              class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
+            >
+              Log out
+            </.link>
+          </li>
+        <% end %>
+      </ul>
+      <div>
+        <span>Total Chips: <%= @current_player.chip_count %></span>
+        <span>| Table Chips: <%= @current_player.chip_count - @game_state.player_bet %></span>
+      </div>
     </div>
-  </div>
-  <div>
-    <h3><%= @game_state.player_count %></h3>
-    <div class="flex" id="player-cards">
-      <img
-        :for={card <- @game_state.player_cards}
-        class="h-52"
-        src={"/images/cards/#{card}.png"}
-        alt=""
-      />
+  </header>
+  <main class="relative flex flex-col justify-between">
+    <section id="dealer">
+      <div class="flex justify-center" id="dealer-cards">
+        <img
+          :for={card <- @game_state.dealer_cards}
+          class="h-36"
+          src={"/images/cards/#{card}.png"}
+          alt=""
+        />
+      </div>
+      <h3><%= @game_state.dealer_count %></h3>
+    </section>
+    <section id="other-players">
+      <%!-- <div :if={@sitting_at_table}> --%>
+      <div>
+        <div id="pick-a-seat" class="flex justify-around">
+          <button phx-click="sit_at_table" phx-value-seat="1">
+            Seat 1
+          </button>
+          <button phx-click="sit_at_table" phx-value-seat="2">
+            Seat 2
+          </button>
+          <button phx-click="sit_at_table" phx-value-seat="3">
+            Seat 3
+          </button>
+          <button phx-click="sit_at_table" phx-value-seat="4">
+            Seat 4
+          </button>
+          <button phx-click="sit_at_table" phx-value-seat="5">
+            Seat 5
+          </button>
+        </div>
+        <div id="table-seats" class="h-28 flex justify-around items-end">
+          <div :for={player <- @shared_game_state.players} class="player-mini-disp">
+            <div :if={map_size(player) == 0}>
+              Empty
+            </div>
+            <div :if={map_size(player) > 0}>
+              <h3>
+                <%= player.player_name %>
+              </h3>
+              <p>
+                Bet: <%= player.player_bet %> chips
+              </p>
+              <p>
+                Table seat: <%= player.table_seat %>
+              </p>
+              <div class="flex justify-center" id="other-player-cards">
+                <img
+                  :for={card <- player.player_cards}
+                  class="h-24"
+                  src={"/images/cards/#{card}.png"}
+                  alt=""
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section id="player" style={"background-color: #{@table.table_color}"}>
+      <div class="flex justify-center">
+        <div class="flex items-end justify-start w-96" id="player-cards">
+          <div :for={card <- @game_state.player_cards} class="relative h-36 w-8">
+            <img class="absolute w-28 max-w-28" src={"/images/cards/#{card}.png"} alt="" />
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="min-h-28 flex flex-col">
+    <div :if={not @game_state.hand_over} id="bet-chips" class="flex justify-center">
+      <div class="relative w-28 max-w-28">
+        <img class="absolute w-28 max-w-28 -top-10" src="/images/red_chip.png" alt="" />
+        <button
+          :if={@current_player.chip_count - @game_state.player_bet >= 5}
+          class="absolute w-28 max-w-28 h-14 -top-10 add-btn"
+          phx-click="add-to-bet"
+          phx-value-chips="5"
+        >
+          <span>+</span>
+        </button>
+        <button
+          :if={5 <= @game_state.player_bet}
+          class="absolute w-28 max-w-28 h-14 -top-7 sub-btn"
+          phx-click="remove-from-bet"
+          phx-value-chips="5"
+        >
+          <span>-</span>
+        </button>
+      </div>
+      <div class="relative w-28 max-w-28">
+        <img class="absolute w-28 max-w-28 -top-10" src="/images/green_chip.png" alt="" />
+        <button
+          :if={@current_player.chip_count - @game_state.player_bet >= 25}
+          class="absolute w-28 max-w-28 h-14 -top-10 add-btn"
+          phx-click="add-to-bet"
+          phx-value-chips="25"
+        >
+          +
+        </button>
+        <button
+          :if={25 <= @game_state.player_bet}
+          class="absolute w-28 max-w-28 h-14 -top-7 sub-btn"
+          phx-click="remove-from-bet"
+          phx-value-chips="25"
+        >
+          -
+        </button>
+      </div>
+      <div class="relative w-28 max-w-28">
+        <img class="absolute w-28 max-w-28 -top-10" src="/images/blue_chip.png" alt="" />
+        <button
+          :if={@current_player.chip_count - @game_state.player_bet >= 100}
+          class="absolute w-28 max-w-28 h-14 -top-10 add-btn"
+          phx-click="add-to-bet"
+          phx-value-chips="100"
+        >
+          +
+        </button>
+        <button
+          :if={100 <= @game_state.player_bet}
+          class="absolute w-28 max-w-28 h-14 -top-7 sub-btn"
+          phx-click="remove-from-bet"
+          phx-value-chips="100"
+        >
+          -
+        </button>
+      </div>
+      <div class="relative w-28 max-w-28">
+        <img class="absolute w-28 max-w-28 -top-10" src="/images/black_chip.png" alt="" />
+        <button
+          :if={@current_player.chip_count - @game_state.player_bet >= 500}
+          class="absolute w-28 max-w-28 h-14 -top-10 add-btn"
+          phx-click="add-to-bet"
+          phx-value-chips="500"
+        >
+          +
+        </button>
+        <button
+          :if={500 <= @game_state.player_bet}
+          class="absolute w-28 max-w-28 h-14 -top-7 sub-btn"
+          phx-click="remove-from-bet"
+          phx-value-chips="500"
+        >
+          -
+        </button>
+      </div>
     </div>
-  </div>
-  <div :if={@game_state.player_bet > 0 and @game_state.bet_placed} id="player-controls">
-    <%= if not @game_state.hand_over do %>
-      <button phx-click="hit-me">Hit Me</button>
-      <button phx-click="stand">Stand</button>
-    <% end %>
-  </div>
-  <div :if={not @game_state.bet_placed}>
-    <div>
-      <span>Add</span>
-      <button
-        :if={@current_player.chip_count - @game_state.player_bet >= 5}
-        phx-click="add-to-bet"
-        phx-value-chips="5"
+    <div class="bg-emerald-500 flex h-32 z-10">
+      <div class="text-xl flex flex-col justify-between w-2/12">
+        <button phx-click="get_up_from_seat">Leave Seat</button>
+        <button phx-click="get_up_from_table">Leave table</button>
+        <button phx-click="new-game">New Game</button>
+        <button phx-click="deal-cards">Deal Cards</button>
+      </div>
+      <div
+        :if={@game_state.player_bet > 0 and @game_state.bet_placed}
+        id="footer-play"
+        class="flex flex-col items-center justify-around w-8/12"
       >
-        5
-      </button>
-      <button
-        :if={@current_player.chip_count - @game_state.player_bet >= 25}
-        phx-click="add-to-bet"
-        phx-value-chips="25"
+        <div>
+          <%= if not @game_state.hand_over do %>
+            <button phx-click="hit-me" class="game-option-btn">Hit Me</button>
+            <button phx-click="stand" class="game-option-btn">Stand</button>
+          <% end %>
+        </div>
+      </div>
+      <%!-- <div
+      :if={not @game_state.bet_placed and @game_state.table_seat > 0}
+      id="footer-bet"
+      class="w-screen flex flex-col items-center"
+    > --%>
+      <div
+        :if={not @game_state.bet_placed}
+        id="footer-bet"
+        class="w-8/12 flex flex-col items-center justify-center"
       >
-        25
-      </button>
-      <button
-        :if={@current_player.chip_count - @game_state.player_bet >= 100}
-        phx-click="add-to-bet"
-        phx-value-chips="100"
-      >
-        100
-      </button>
-      <button
-        :if={@current_player.chip_count - @game_state.player_bet >= 500}
-        phx-click="add-to-bet"
-        phx-value-chips="500"
-      >
-        500
-      </button>
-      <button :if={@current_player.chip_count > @game_state.player_bet} phx-click="all-in">
-        All In
-      </button>
-      <button :if={@game_state.player_bet > 0} phx-click="clear-bet">
-        Clear Bet
-      </button>
+        <%!-- <p><%= @game_state.bet_placed and @game_state.table_seat > 0 %></p> --%>
+        <div id="bet-buttons" class="flex justify-around w-1/2">
+          <button
+            :if={@current_player.chip_count > @game_state.player_bet}
+            phx-click="all-in"
+            class="game-option-btn"
+          >
+            All In
+          </button>
+          <button
+            :if={@current_player.chip_count <= @game_state.player_bet}
+            class="game-option-btn-fade"
+          >
+            All In
+          </button>
+          <button
+            :if={@current_player.chip_count > @table.table_min}
+            phx-click="bet-minimum"
+            class="game-option-btn"
+          >
+            Minimum
+          </button>
+          <button :if={@game_state.player_bet > 0} phx-click="clear-bet" class="game-option-btn">
+            Clear Bet
+          </button>
+          <button :if={@game_state.player_bet == 0} class="game-option-btn-fade">
+            Clear Bet
+          </button>
+          <button
+            :if={@game_state.player_bet >= @table.table_min}
+            phx-click="place-bet"
+            class="game-option-btn"
+          >
+            Place Bet
+          </button>
+          <button :if={@game_state.player_bet < @table.table_min} class="game-option-btn-fade">
+            Place Bet
+          </button>
+        </div>
+      </div>
+      <div>
+        <p>Current Bet: <%= @game_state.player_bet %></p>
+        <p>Hand Card Count: <%= @game_state.player_count %></p>
+        <p>Seat: <%= @game_state.table_seat %></p>
+      </div>
     </div>
-    <div>
-      <span>Remove</span>
-      <button :if={5 <= @game_state.player_bet} phx-click="remove-from-bet" phx-value-chips="5">
-        5
-      </button>
-      <button :if={25 <= @game_state.player_bet} phx-click="remove-from-bet" phx-value-chips="25">
-        25
-      </button>
-      <button
-        :if={100 <= @game_state.player_bet}
-        phx-click="remove-from-bet"
-        phx-value-chips="100"
-      >
-        100
-      </button>
-      <button
-        :if={500 <= @game_state.player_bet}
-        phx-click="remove-from-bet"
-        phx-value-chips="500"
-      >
-        500
-      </button>
-    </div>
-    <button :if={@game_state.player_bet >= @table.table_min} phx-click="place-bet">
-      Place Bet
-    </button>
-  </div>
+  </footer>
 </div>

@@ -3,3 +3,100 @@
 @import "tailwindcss/utilities";
 
 /* This file is for your main application CSS */
+
+.game-option-btn {
+  background-color: green;
+  padding: 10px 15px;
+  border: 3px solid white;
+  border-radius: 15px;
+}
+.game-option-btn-fade {
+  /* background-color: rgba(4, 147, 4, 0.537); */
+  background-color: green;
+  opacity: 60%;
+  padding: 10px 15px;
+  border: 3px solid white;
+  border-radius: 15px;
+  cursor: default;
+}
+#player-cards > div:nth-child(2) {
+  margin-bottom: 10px;
+}
+#player-cards > div:nth-child(3) {
+  margin-bottom: 20px;
+}
+#player-cards > div:nth-child(4) {
+  margin-bottom: 30px;
+}
+#player-cards > div:nth-child(5) {
+  margin-bottom: 20px;
+}
+#player-cards > div:nth-child(6) {
+  margin-bottom: 10px;
+}
+#bet-chips > div:hover img,
+#bet-chips > div:hover .add-btn {
+  top: -5rem;
+}
+/* #bet-chips > div:hover .sub-btn {
+  top: 0rem;
+} */
+#bet-chips .add-btn:hover {
+  opacity: 50%;
+  background-color: grey;
+  border-top-left-radius: 50% 100%;
+  border-top-right-radius: 50% 100%;
+  font-size: 24px;
+  font-weight: bold;
+  color: darkgrey;
+}
+#bet-chips .sub-btn:hover {
+  opacity: 50%;
+  background-color: grey;
+  border-bottom-left-radius: 100% 50%;
+  border-bottom-right-radius: 100% 50%;
+  font-size: 24px;
+  font-weight: bold;
+  color: darkgrey;
+}
+#bet-chips .sub-btn {
+  vertical-align: top;
+}
+.player-mini-disp > div {
+  border: 3px solid white;
+  width: 200px;
+  height: 150px;
+}
+.player-mini-disp:nth-of-type(1) > div {
+  transform: rotateZ(35deg);
+}
+.player-mini-disp:nth-of-type(2) > div {
+  transform: rotateZ(12deg);
+}
+.player-mini-disp:nth-of-type(4) > div {
+  transform: rotateZ(-12deg);
+}
+.player-mini-disp:nth-of-type(5) > div {
+  transform: rotateZ(-35deg);
+}
+.player-mini-disp:nth-of-type(1) {
+  margin-bottom: 120px;
+}
+.player-mini-disp:nth-of-type(2) {
+  margin-bottom: 25px;
+}
+.player-mini-disp:nth-of-type(4) {
+  margin-bottom: 25px;
+}
+.player-mini-disp:nth-of-type(5) {
+  margin-bottom: 120px;
+}
+main {
+  height: calc(100vh - 250px);
+}
+#table-page {
+  height: 100vh;
+}
+#dealer {
+  margin-top: 100px;
+}

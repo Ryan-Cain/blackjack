@@ -1,7 +1,10 @@
 defmodule Blackjack.Logic.GameLogic do
-  def initial_game_state() do
+  def initial_game_state(player_id, player_name, table_seat, table_id) do
     state = %{
-      table_seat: 2,
+      player_id: player_id,
+      player_name: player_name,
+      table_id: 0,
+      table_seat: table_seat,
       player_bet: 0,
       bet_placed: false,
       player_count: 0,
@@ -173,7 +176,7 @@ defmodule Blackjack.Logic.GameLogic do
     initial_deal
   end
 
-  def reset_table() do
-    initial_game_state()
+  def reset_table(player_id, player_name, table_seat, table_id) do
+    initial_game_state(player_id, player_name, table_seat, table_id)
   end
 end
