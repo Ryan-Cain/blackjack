@@ -45,6 +45,17 @@ defmodule Blackjack.Accounts do
   end
 
   @doc """
+  Gets a player by username and password.
+
+
+  """
+  def get_player_by_username_and_password(username, password)
+      when is_binary(username) and is_binary(password) do
+    player = Repo.get_by(Player, name: username)
+    if Player.valid_password?(player, password), do: player
+  end
+
+  @doc """
   Gets a single player.
 
   Raises `Ecto.NoResultsError` if the Player does not exist.

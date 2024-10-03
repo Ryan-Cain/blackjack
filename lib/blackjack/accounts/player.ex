@@ -41,9 +41,11 @@ defmodule Blackjack.Accounts.Player do
   """
   def registration_changeset(player, attrs, opts \\ []) do
     player
-    |> cast(attrs, [:email, :password])
+    |> cast(attrs, [:email, :name, :password])
     |> validate_email(opts)
     |> validate_password(opts)
+    |> unique_constraint(:name)
+    |> validate_length(:name, min: 3, max: 20)
   end
 
   defp validate_email(changeset, opts) do
@@ -167,6 +169,7 @@ defmodule Blackjack.Accounts.Player do
   def changeset(player, attrs) do
     player
     |> cast(attrs, [:name, :chip_count, :hands_played, :hands_won])
+    |> unique_constraint(:username)
     |> validate_required([:name, :chip_count, :hands_played, :hands_won])
   end
 end
