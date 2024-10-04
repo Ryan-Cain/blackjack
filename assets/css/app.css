@@ -96,7 +96,67 @@ main {
 }
 #table-page {
   height: 100vh;
+  background-image: url("/images/green_felt2.jpg");
+  background-position: center; /* Center the image */
+  background-repeat: no-repeat; /* Do not repeat the image */
+  background-size: cover; /* Resize the background image to cover the entire container */
 }
 #dealer {
   margin-top: 100px;
 }
+body {
+  height: 100vh;
+  background-image: url("/images/card_bg.jpg");
+  background-position: center; /* Center the image */
+  background-repeat: no-repeat; /* Do not repeat the image */
+  background-size: cover; /* Resize the background image to cover the entire container */
+  color: white;
+}
+.welcome-message h1 {
+  font-size: 60px;
+}
+.welcome-message p {
+  font-size: 32px;
+  text-align: center;
+}
+.welcome-message #win-msg {
+  font-size: 44px;
+  text-decoration: underline;
+}
+.welcome-message #lose-msg {
+  font-size: 44px;
+  color: #20693a !important;
+  background-color: transparent !important;
+  -ms-high-contrast-adjust: none !important;
+}
+#login-reg-form {
+  background-image: url("/images/green_felt.jpg");
+  background-position: center; /* Center the image */
+  background-repeat: no-repeat; /* Do not repeat the image */
+  background-size: cover; /* Resize the background image to cover the entire container */
+  padding: 25px;
+  color: white;
+  border-radius: 25px;
+  border: 10px solid white;
+  min-width: 410px;
+}
+#login-reg-form .header-msg {
+  font-size: 24px;
+}
+.play-btn > p > span {
+  transition: margin-left 0.3s ease, transform 0.3s ease;
+  margin-left: 0px;
+}
+.play-btn:hover > p > span {
+  margin-left: 15px;
+}
+.play-btn > span {
+  margin-left: 15px;
+}
+.play-btn > p {
+  width: 30px;
+  display: inline-block;
+}
+/* .forgot-password #login-reg-form {
+  visibility: hidden;
+} */

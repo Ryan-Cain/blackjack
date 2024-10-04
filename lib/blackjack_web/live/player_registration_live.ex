@@ -6,39 +6,68 @@ defmodule BlackjackWeb.PlayerRegistrationLive do
 
   def render(assigns) do
     ~H"""
-    <div class="mx-auto max-w-sm">
-      <.header class="text-center">
-        Register for an account
-        <:subtitle>
-          Already registered?
-          <.link navigate={~p"/players/log_in"} class="font-semibold text-brand hover:underline">
-            Log in
-          </.link>
-          to your account now.
-        </:subtitle>
-      </.header>
+    <div class="flex justify-center items-center h-screen w-screen relative">
+      <div class="ml-24 mb-36 welcome-message">
+        <h1>Welcome to Blackjack!</h1>
+        <p>
+          Log in to
+          <span id="win-msg">WIN</span><span
+            id="lose-msg"
+            data-darkreader-ignore
+            aria-hidden="true"
+            role="presentation"
+          >(or lose)</span>
+        </p>
+        <p>a whole bunch of money!!</p>
+      </div>
+      <div id="login-reg-form" class="mx-auto">
+        <.header class="text-center">
+          <span class="header-msg">Register for an account!</span>
+          <:subtitle>
+            Already registered?
+            <.link
+              navigate={~p"/players/log_in"}
+              class="font-bold text-base text-green-400 hover:underline"
+            >
+              Log in here
+            </.link>
+          </:subtitle>
+        </.header>
 
-      <.simple_form
-        for={@form}
-        id="registration_form"
-        phx-submit="save"
-        phx-change="validate"
-        phx-trigger-action={@trigger_submit}
-        action={~p"/players/log_in?_action=registered"}
-        method="post"
-      >
-        <.error :if={@check_errors}>
-          Oops, something went wrong! Please check the errors below.
-        </.error>
+        <.simple_form
+          for={@form}
+          id="registration_form"
+          phx-submit="save"
+          phx-change="validate"
+          phx-trigger-action={@trigger_submit}
+          action={~p"/players/log_in?_action=registered"}
+          method="post"
+        >
+          <.error :if={@check_errors}>
+            Oops, something went wrong! Please check the errors below.
+          </.error>
+          <.input field={@form[:name]} type="text" label="Username" required />
+          <.input field={@form[:email]} type="email" label="Email" required />
+          <.input field={@form[:password]} type="password" label="Password" required />
 
-        <.input field={@form[:name]} type="text" label="Username" required />
-        <.input field={@form[:email]} type="email" label="Email" required />
-        <.input field={@form[:password]} type="password" label="Password" required />
-
-        <:actions>
-          <.button phx-disable-with="Creating account..." class="w-full">Create an account</.button>
-        </:actions>
-      </.simple_form>
+          <:actions>
+            <.button
+              phx-disable-with="Creating account..."
+              class="w-full text-xl bg-green-600 transition duration-300 ease-in-out hover:bg-green-500 play-btn"
+            >
+              <span>
+                Create account!
+              </span>
+              <p>
+                <span aria-hidden="true">→</span>
+              </p>
+            </.button>
+          </:actions>
+        </.simple_form>
+      </div>
+      <h3 class="fixed left-1/2 transform -translate-x-1/2 bottom-5">
+        IF YOU HAVE A GAMBLING PROBLEM, <span class="font-bold text-lg">CALL 1-800-GAMBLER</span>
+      </h3>
     </div>
     """
   end

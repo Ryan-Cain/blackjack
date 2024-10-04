@@ -5,38 +5,101 @@ defmodule BlackjackWeb.PlayerResetPasswordLive do
 
   def render(assigns) do
     ~H"""
-    <div class="mx-auto max-w-sm">
-      <.header class="text-center">Reset Password</.header>
+    <div class="flex justify-center items-center h-screen w-screen relative">
+      <div class="ml-24 mb-36 welcome-message">
+        <h1>Welcome to Blackjack!</h1>
+        <p>
+          Log in to
+          <span id="win-msg">WIN</span><span
+            id="lose-msg"
+            data-darkreader-ignore
+            aria-hidden="true"
+            role="presentation"
+          >(or lose)</span>
+        </p>
+        <p>a whole bunch of money!!</p>
+      </div>
+      <div id="login-reg-form" class="mx-auto">
+        <.header class="text-center">
+          <span class="header-msg">Reset Password!</span>
+        </.header>
 
-      <.simple_form
-        for={@form}
-        id="reset_password_form"
-        phx-submit="reset_password"
-        phx-change="validate"
-      >
-        <.error :if={@form.errors != []}>
-          Oops, something went wrong! Please check the errors below.
-        </.error>
-
-        <.input field={@form[:password]} type="password" label="New password" required />
-        <.input
-          field={@form[:password_confirmation]}
-          type="password"
-          label="Confirm new password"
-          required
-        />
-        <:actions>
-          <.button phx-disable-with="Resetting..." class="w-full">Reset Password</.button>
-        </:actions>
-      </.simple_form>
-
-      <p class="text-center text-sm mt-4">
-        <.link href={~p"/players/register"}>Register</.link>
-        | <.link href={~p"/players/log_in"}>Log in</.link>
-      </p>
+        <.simple_form
+          for={@form}
+          id="reset_password_form"
+          phx-submit="reset_password"
+          phx-change="validate"
+        >
+          <.error :if={@form.errors != []}>
+            Oops, something went wrong! Please check the errors below.
+          </.error>
+          <.input field={@form[:password]} type="password" label="New password" required />
+          <.input
+            field={@form[:password_confirmation]}
+            type="password"
+            label="Confirm new password"
+            required
+          />
+          <:actions>
+            <.button
+              phx-disable-with="Creating account..."
+              class="w-full text-xl bg-green-600 transition duration-300 ease-in-out hover:bg-green-500 play-btn"
+            >
+              <span>
+                Reset Password!
+              </span>
+              <p>
+                <span aria-hidden="true">→</span>
+              </p>
+            </.button>
+          </:actions>
+        </.simple_form>
+        <p class="text-center text-sm mt-4">
+          <.link href={~p"/players/register"}>Register</.link>
+          | <.link href={~p"/players/log_in"}>Log in</.link>
+        </p>
+      </div>
+      <h3 class="fixed left-1/2 transform -translate-x-1/2 bottom-5">
+        IF YOU HAVE A GAMBLING PROBLEM, <span class="font-bold text-lg">CALL 1-800-GAMBLER</span>
+      </h3>
     </div>
     """
   end
+
+  # def render(assigns) do
+  #   ~H"""
+  #   <div class="mx-auto max-w-sm">
+  #     <.header class="text-center">Reset Password</.header>
+
+  #     <.simple_form
+  #       for={@form}
+  #       id="reset_password_form"
+  #       phx-submit="reset_password"
+  #       phx-change="validate"
+  #     >
+  #       <.error :if={@form.errors != []}>
+  #         Oops, something went wrong! Please check the errors below.
+  #       </.error>
+
+  #       <.input field={@form[:password]} type="password" label="New password" required />
+  #       <.input
+  #         field={@form[:password_confirmation]}
+  #         type="password"
+  #         label="Confirm new password"
+  #         required
+  #       />
+  #       <:actions>
+  #         <.button phx-disable-with="Resetting..." class="w-full">Reset Password</.button>
+  #       </:actions>
+  #     </.simple_form>
+
+  #     <p class="text-center text-sm mt-4">
+  #       <.link href={~p"/players/register"}>Register</.link>
+  #       | <.link href={~p"/players/log_in"}>Log in</.link>
+  #     </p>
+  #   </div>
+  #   """
+  # end
 
   def mount(params, _session, socket) do
     socket = assign_player_and_token(socket, params)

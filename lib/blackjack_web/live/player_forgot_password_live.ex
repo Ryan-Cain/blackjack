@@ -5,24 +5,69 @@ defmodule BlackjackWeb.PlayerForgotPasswordLive do
 
   def render(assigns) do
     ~H"""
-    <div class="mx-auto max-w-sm">
-      <.header class="text-center">
-        Forgot your password?
-        <:subtitle>We'll send a password reset link to your inbox</:subtitle>
-      </.header>
-
-      <.simple_form for={@form} id="reset_password_form" phx-submit="send_email">
-        <.input field={@form[:email]} type="email" placeholder="Email" required />
-        <:actions>
-          <.button phx-disable-with="Sending..." class="w-full">
-            Send password reset instructions
+    <div class="flex justify-center items-center h-screen w-screen relative forgot-password">
+      <div id="unhelpful-reset-msg" class="ml-24 mb-36 welcome-message">
+        <h1>Sorry you forgot the password!</h1>
+        <p>
+          Unfortunately that means <span id="win-msg">ALL</span>
+        </p>
+        <p>of your chips belong to us!!</p>
+        <div style="text-align: center">
+          <.button
+            id="sike-btn"
+            phx-disable-with="Sending..."
+            class="mt-48 text-xl bg-green-600 transition duration-300 ease-in-out hover:bg-green-500 play-btn"
+            phx-click={
+              JS.show(to: "#login-reg-form")
+              |> JS.show(to: "#helpful-reset-msg")
+              |> JS.hide(to: "#sike-btn")
+              |> JS.hide(to: "#unhelpful-reset-msg")
+            }
+          >
+            Sike! Just click here
           </.button>
-        </:actions>
-      </.simple_form>
-      <p class="text-center text-sm mt-4">
-        <.link href={~p"/players/register"}>Register</.link>
-        | <.link href={~p"/players/log_in"}>Log in</.link>
-      </p>
+        </div>
+      </div>
+      <div id="helpful-reset-msg" class="ml-24 mb-36 welcome-message hidden">
+        <h1>Please just fill out the form</h1>
+        <p>
+          And we will send you an email
+        </p>
+        <p>to reset your password!!</p>
+      </div>
+      <div id="login-reg-form" class="mx-auto hidden">
+        <.header class="text-center">
+          <span class="header-msg">Forgot your password?</span>
+        </.header>
+
+        <.simple_form for={@form} id="reset_password_form" phx-submit="send_email">
+          <.error :if={@form.errors != []}>
+            Oops, something went wrong! Please check the errors below.
+          </.error>
+
+          <.input field={@form[:email]} type="email" placeholder="Email" required />
+          <:actions>
+            <.button
+              phx-disable-with="Sending..."
+              class="w-full text-xl bg-green-600 transition duration-300 ease-in-out hover:bg-green-500 play-btn"
+            >
+              <span>
+                Send password reset instructions
+              </span>
+              <p>
+                <span aria-hidden="true">→</span>
+              </p>
+            </.button>
+          </:actions>
+        </.simple_form>
+        <p class="text-center text-sm mt-4">
+          <.link href={~p"/players/register"}>Register</.link>
+          | <.link href={~p"/players/log_in"}>Log in</.link>
+        </p>
+      </div>
+      <h3 class="fixed left-1/2 transform -translate-x-1/2 bottom-5">
+        IF YOU HAVE A GAMBLING PROBLEM, <span class="font-bold text-lg">CALL 1-800-GAMBLER</span>
+      </h3>
     </div>
     """
   end
