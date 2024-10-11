@@ -1,22 +1,37 @@
 defmodule Blackjack.Logic.GameLogic do
-  def initial_game_state(player_id, player_name, table_seat, table_id) do
+  def initial_player_state(player_id, player_name, table_seat, table_id) do
     state = %{
       player_id: player_id,
       player_name: player_name,
-      table_id: 0,
+      active_move: false,
+      # table_id: table_id,
       table_seat: table_seat,
       player_bet: 0,
       bet_placed: false,
       player_count: 0,
       player_ace_high_count: 0,
       player_cards: [],
+      # dealer_count: 0,
+      # dealer_ace_high_count: 0,
+      # dealer_cards: [],
+      # dealer_hidden_card: "",
+      # dealer_bust: false,
+      hand_over: false,
+      player_won: false
+    }
+
+    state
+  end
+
+  def initial_dealer_state(table_id) do
+    state = %{
+      table_id: table_id,
       dealer_count: 0,
       dealer_ace_high_count: 0,
       dealer_cards: [],
       dealer_hidden_card: "",
       dealer_bust: false,
-      hand_over: false,
-      player_won: false
+      hand_over: false
     }
 
     state
@@ -34,7 +49,6 @@ defmodule Blackjack.Logic.GameLogic do
     # Get point value of face card, and whether or not its ace high (Ex. if "A" [10, true])
     face_value = get_face_value(card_face, player_count)
     new_player_count = player_count + List.first(face_value)
-    IO.inspect(List.last(face_value), label: "face value")
 
     game_state_add_ace_high =
       if List.last(face_value) do
@@ -65,7 +79,6 @@ defmodule Blackjack.Logic.GameLogic do
     face_value = get_face_value(card_face, dealer_count)
     new_dealer_count = dealer_count + List.first(face_value)
     dealer_card_count = length(game_state.dealer_cards)
-    IO.inspect(dealer_card_count)
 
     game_state_add_ace_high =
       if List.last(face_value) do
@@ -166,17 +179,13 @@ defmodule Blackjack.Logic.GameLogic do
     end
   end
 
-  def initial_deal(game_state) do
-    initial_deal =
-      hit(game_state, :player)
-      |> hit(:dealer)
-      |> hit(:player)
-      |> hit(:dealer)
+  # def initial_deal(game_state) do
+  #   initial_deal =
+  #     hit(game_state, :player)
+  #     |> hit(:dealer)
+  #     |> hit(:player)
+  #     |> hit(:dealer)
 
-    initial_deal
-  end
-
-  def reset_table(player_id, player_name, table_seat, table_id) do
-    initial_game_state(player_id, player_name, table_seat, table_id)
-  end
+  #   initial_deal
+  # end
 end

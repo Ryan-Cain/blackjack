@@ -1,4 +1,5 @@
 defmodule BlackjackWeb.TableLive.Play do
+  alias MyApp.GameRoomServer
   use BlackjackWeb, :live_view
 
   alias Blackjack.Games
@@ -7,36 +8,25 @@ defmodule BlackjackWeb.TableLive.Play do
   alias Blackjack.Logic.GameLogic
 
   @impl true
-  def mount(%{"id" => game_id}, _session, %{assigns: %{current_player: current_player}} = socket) do
-    IO.inspect("MOUNT")
-    player_id = current_player.id
-    # initial_state = GameLogic.reset_table(player_id)
-    # IO.inspect(initial_state, label: "initial game state is")
-    # IO.inspect(socket.assigns, label: "This is the MOUNT socket.assigns")
-    # Start the game room GenServer if it doesn't exist
+  def mount(
+        %{"id" => game_id},
+        _session,
+        socket
+      ) do
     {game_id_int, _} = Integer.parse(game_id)
 
     if connected?(socket) do
-      IO.inspect("MOUNT: connected")
       Phoenix.PubSub.subscribe(Blackjack.PubSub, "game:#{game_id}")
 
       unless game_room_exists?(game_id_int) do
-        IO.inspect("MOUNT: game room: #{game_id_int} does not exist")
         MyApp.GameRoomSupervisor.start_game_room(game_id_int)
       end
     end
 
-    # Add the player to the game room
-    # MyApp.GameRoomServer.add_player(game_id, initial_state)
-
     # Fetch the current game state
-    # game_state = MyApp.GameRoomServer.get_game_state(game_id_int)
     game_state = MyApp.GameRoomServer.get_game_state(game_id_int)
-    IO.inspect(game_state, label: "MOUNT: shared game state")
-
-    players = game_state.shared.players
-    player_at_table = Enum.any?(players, fn map -> map[:player_id] == player_id end)
-    IO.inspect(player_at_table, label: "player at table")
+    # players = game_state.players
+    # player_at_table = Enum.any?(players, fn map -> map[:player_id] == player_id end)
 
     {:ok,
      assign(socket,
@@ -48,36 +38,20 @@ defmodule BlackjackWeb.TableLive.Play do
          player_count: 0,
          player_ace_high_count: 0,
          player_cards: [],
-         dealer_count: 0,
-         dealer_ace_high_count: 0,
-         dealer_cards: [],
-         dealer_hidden_card: "",
-         dealer_bust: false,
          hand_over: false,
          player_won: false
        },
-       shared_game_state: game_state.shared,
-       game_id: game_id,
-       sitting_at_table: player_at_table
-       #  player_id: player_id
+       shared_game_state: game_state,
+       game_id: game_id
      )}
   end
 
-  #   {:ok, assign(socket, game_state: initial_state)}
-  # end
-
   @impl true
   def handle_params(%{"id" => id}, _, socket) do
-    player_at_table = socket.assigns.sitting_at_table
-    IO.inspect(socket, label: "HANDLE PARAMS: socket")
-
     {:noreply,
      socket
      |> assign(:page_title, page_title(socket.assigns.live_action))
-     |> assign(:sitting_at_table, player_at_table)
      |> assign(:table, Games.get_table!(id))}
-
-    #  |> assign(:players, Tables.get_player!(socket.assigns.current_player.id))}
   end
 
   @impl true
@@ -87,27 +61,12 @@ defmodule BlackjackWeb.TableLive.Play do
         %{assigns: %{current_player: current_player, table: table}} = socket
       ) do
     IO.inspect("EVENT: sit_at_table")
-    {seat_position, _} = Integer.parse(seat)
-    # game_id = 1
-    initial_state =
-      GameLogic.reset_table(current_player.id, current_player.name, seat_position, table.id)
-
-    IO.inspect(initial_state, label: "initial game state is")
 
     # Add the player to the game room
-    MyApp.GameRoomServer.add_player(table.id, initial_state)
-
-    # Fetch the current game state
-    game_state = MyApp.GameRoomServer.get_game_state(table.id)
-    IO.inspect(game_state, label: "SIT AT TABLE: shared game state")
-
-    {:noreply,
-     assign(socket,
-       game_state: initial_state,
-       shared_game_state: game_state.shared,
-       game_id: table.id,
-       sitting_at_table: true
-     )}
+    {seat_position, _} = Integer.parse(seat)
+    player_info = %{current_player: current_player, seat_position: seat_position}
+    MyApp.GameRoomServer.add_player(table.id, player_info)
+    {:noreply, socket}
   end
 
   # Remove the player from the game room
@@ -138,7 +97,7 @@ defmodule BlackjackWeb.TableLive.Play do
     {:noreply,
      assign(socket,
        #  game_state: initial_state,
-       shared_game_state: game_state.shared,
+       shared_game_state: game_state,
        game_id: table.id,
        sitting_at_table: false
      )}
@@ -147,19 +106,13 @@ defmodule BlackjackWeb.TableLive.Play do
   def handle_event(
         "new-game",
         _,
-        %{assigns: %{current_player: current_player, table: table}} = socket
+        %{assigns: %{table: table}} = socket
       ) do
     # {seat_position, _} = Integer.parse(seat)
-    reset_players = MyApp.GameRoomServer.reset_all_players(table.id)
-    IO.inspect(reset_players, label: "NEW GAME: reset players")
-    # initial_state = GameLogic.reset_table(current_player.id, current_player.name, ,  table.id)
-
-    socket =
-      assign(socket,
-        # game_state: initial_state,
-        sitting_at_table: true
-      )
-
+    # reset_players = MyApp.GameRoomServer.reset_all_players(table.id)
+    # IO.inspect(reset_players, label: "NEW GAME: reset players")
+    # MyApp.GameRoomServer.game_flow(table.id)
+    MyApp.GameRoomServer.start_game(table.id)
     {:noreply, socket}
   end
 
@@ -177,11 +130,11 @@ defmodule BlackjackWeb.TableLive.Play do
     # player = Enum.find(filtered_players, fn player -> player.player_id == current_player.id end)
 
     IO.inspect(dealt_players, label: "NEW GAME: reset players")
-    # initial_state = GameLogic.reset_table(current_player.id, current_player.name, table.id)
+
+    # initial_state = GameLogic.initial_player_state(current_player.id, current_player.name, table.id)
 
     socket =
       assign(socket,
-        # game_state: player,
         sitting_at_table: true,
         shared_game_state: dealt_players.shared
       )
@@ -206,7 +159,6 @@ defmodule BlackjackWeb.TableLive.Play do
   def handle_event(
         "stand",
         _,
-        # %{assigns: %{current_player: player, game_state: game_state}} = socket
         socket
       ) do
     # user_id = players.id
@@ -281,12 +233,18 @@ defmodule BlackjackWeb.TableLive.Play do
     {:noreply, socket}
   end
 
-  def handle_event("place-bet", _, socket) do
-    game_state = socket.assigns.game_state
-    game_state_placed_bet = Map.put(game_state, :bet_placed, true)
-    game_state_initial_deal = GameLogic.initial_deal(game_state_placed_bet)
-    socket = assign(socket, game_state: game_state_initial_deal, sitting_at_table: true)
-    IO.inspect(socket)
+  def handle_event(
+        "place-bet",
+        _,
+        %{assigns: %{current_player: current_player, game_state: game_state, table: table}} =
+          socket
+      ) do
+    # game_state_placed_bet = Map.put(game_state, :bet_placed, true)
+    # game_state_initial_deal = GameLogic.initial_deal(game_state_placed_bet)
+    # socket = assign(socket, game_state: game_state_initial_deal, sitting_at_table: true)
+    # socket = assign(socket, game_state: game_state_placed_bet, sitting_at_table: true)
+    GameRoomServer.place_bet(table.id, current_player.id, game_state.player_bet)
+
     {:noreply, socket}
   end
 
@@ -296,12 +254,31 @@ defmodule BlackjackWeb.TableLive.Play do
         %{assigns: %{current_player: current_player}} = socket
       ) do
     # Handle game state updates broadcasted via PubSub
-    IO.inspect(new_state, label: "Handle info fired!")
+    # IO.inspect(new_state, label: "Handle info fired!")
 
     filtered_players =
       Enum.filter(new_state.players, fn player -> map_size(player) > 0 end)
 
     player = Enum.find(filtered_players, fn player -> player.player_id == current_player.id end)
+
+    player =
+      if player do
+        player
+      else
+        %{
+          player_id: 0,
+          table_seat: 0,
+          player_bet: 0,
+          bet_placed: false,
+          player_count: 0,
+          player_ace_high_count: 0,
+          player_cards: [],
+          hand_over: false,
+          player_won: false
+        }
+      end
+
+    # IO.inspect(player, label: "player")
 
     # {:noreply, assign(socket, shared_game_state: new_state, game_state: player)}
     {:noreply, assign(socket, shared_game_state: new_state, game_state: player)}

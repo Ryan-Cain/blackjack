@@ -14,7 +14,6 @@ defmodule BlackjackWeb.PlayerConfirmationLive do
           <.button phx-disable-with="Confirming..." class="w-full">Confirm my account</.button>
         </:actions>
       </.simple_form>
-
       <p class="text-center mt-4">
         <.link href={~p"/players/register"}>Register</.link>
         | <.link href={~p"/players/log_in"}>Log in</.link>

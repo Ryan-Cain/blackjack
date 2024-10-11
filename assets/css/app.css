@@ -3,7 +3,9 @@
 @import "tailwindcss/utilities";
 
 /* This file is for your main application CSS */
-
+html {
+  background-color: #0a4720;
+}
 .game-option-btn {
   background-color: green;
   padding: 10px 15px;
@@ -68,16 +70,16 @@
   height: 150px;
 }
 .player-mini-disp:nth-of-type(1) > div {
-  transform: rotateZ(35deg);
+  transform: rotateZ(-35deg);
 }
 .player-mini-disp:nth-of-type(2) > div {
-  transform: rotateZ(12deg);
-}
-.player-mini-disp:nth-of-type(4) > div {
   transform: rotateZ(-12deg);
 }
+.player-mini-disp:nth-of-type(4) > div {
+  transform: rotateZ(12deg);
+}
 .player-mini-disp:nth-of-type(5) > div {
-  transform: rotateZ(-35deg);
+  transform: rotateZ(35deg);
 }
 .player-mini-disp:nth-of-type(1) {
   margin-bottom: 120px;
@@ -160,3 +162,73 @@ body {
 /* .forgot-password #login-reg-form {
   visibility: hidden;
 } */
+#dealer-deck {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 35px;
+  height: 50px;
+  background: url("/images/cards/BACK.png") no-repeat center/cover;
+  transform: translate(-50%, -50%); /* Center the deck */
+}
+
+.other-player-cards > div img {
+  top: 10%;
+  left: 10%;
+  position: absolute;
+}
+
+/* .other-player-cards > div:nth-of-type(5) {
+    top: 10%;
+    right: 10%;
+    position: absolute;
+  } */
+
+.move-card {
+  width: 35px;
+  height: 50px;
+  position: absolute;
+  top: 0; /* Final position in parent div */
+  left: 0;
+  /* opacity: 0; Initially invisible */
+  transform-origin: center; /* Center of the card is used for scaling */
+}
+
+@keyframes deal-from-dealer1 {
+  0% {
+    opacity: 0;
+    transform: translate(-300, -300); /* Shrink and pull to the dealer's deck */
+  }
+  20% {
+    opacity: 1; /* Make the card visible */
+  }
+  100% {
+    transform: translate(0, 0); /* Final position (reset transformation) */
+  }
+}
+
+@keyframes deal-from-dealer5 {
+  0% {
+    opacity: 0;
+    transform: translate(300, 300); /* Shrink and pull to the dealer's deck */
+  }
+  20% {
+    opacity: 1; /* Make the card visible */
+  }
+  100% {
+    transform: translate(0, 0); /* Final position (reset transformation) */
+  }
+}
+
+/* Dealing to player 1 */
+.other-player-cards > div > img {
+  animation: deal-from-dealer1 2s ease-in-out forwards;
+  transform: translate(300px, 300px);
+  /* Start at dealer's deck (relative to player) */
+}
+/* Dealing to player 2 */
+/* .other-player-cards > div:nth-of-type(5) > img {
+  animation: deal-from-dealer 1s ease-in-out forwards;
+} */
+
+/* transform: translate(-300px, 300px) scale(0.5); Start at dealer's deck (relative to player) */

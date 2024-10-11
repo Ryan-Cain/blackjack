@@ -17,6 +17,9 @@
       </h3>
       <h3 :if={@game_state.hand_over and @game_state.player_won}>You beat the dealer!!</h3>
       <h3 :if={@game_state.hand_over and not @game_state.player_won}>House wins!!</h3>
+      <div id="dealer-deck">
+        <img class="w-12" src="/images/cards/BACK.png" alt="" />
+      </div>
     </div>
     <div id="player-info">
       <ul class="relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
@@ -53,40 +56,39 @@
     <section id="dealer">
       <div class="flex justify-center" id="dealer-cards">
         <img
-          :for={card <- @game_state.dealer_cards}
+          :for={card <- @shared_game_state.dealer.dealer_cards}
           class="h-36"
           src={"/images/cards/#{card}.png"}
           alt=""
         />
       </div>
-      <h3><%= @game_state.dealer_count %></h3>
+      <h3><%= @shared_game_state.dealer.dealer_count %></h3>
     </section>
     <section id="other-players">
-      <%!-- <div :if={@sitting_at_table}> --%>
       <div>
-        <div id="pick-a-seat" class="flex justify-around">
-          <button phx-click="sit_at_table" phx-value-seat="1">
+        <div id="pick-a-seat" class="flex justify-around ">
+          <button phx-click="sit_at_table" phx-value-seat="5">
             Seat 1
           </button>
-          <button phx-click="sit_at_table" phx-value-seat="2">
+          <button phx-click="sit_at_table" phx-value-seat="4">
             Seat 2
           </button>
           <button phx-click="sit_at_table" phx-value-seat="3">
             Seat 3
           </button>
-          <button phx-click="sit_at_table" phx-value-seat="4">
+          <button phx-click="sit_at_table" phx-value-seat="2">
             Seat 4
           </button>
-          <button phx-click="sit_at_table" phx-value-seat="5">
+          <button phx-click="sit_at_table" phx-value-seat="1">
             Seat 5
           </button>
         </div>
-        <div id="table-seats" class="h-28 flex justify-around items-end">
+        <div id="table-seats" class="h-28 flex flex-row-reverse justify-around items-end">
           <div :for={player <- @shared_game_state.players} class="player-mini-disp">
-            <div :if={map_size(player) == 0}>
+            <div :if={player.table_seat == 0}>
               Empty
             </div>
-            <div :if={map_size(player) > 0}>
+            <div :if={player.table_seat > 0}>
               <h3>
                 <%= player.player_name %>
               </h3>
@@ -96,13 +98,13 @@
               <p>
                 Table seat: <%= player.table_seat %>
               </p>
-              <div class="flex justify-center" id="other-player-cards">
-                <img
-                  :for={card <- player.player_cards}
-                  class="h-24"
-                  src={"/images/cards/#{card}.png"}
-                  alt=""
-                />
+              <p>
+                Active move: <%= player.active_move %>
+              </p>
+              <div class="flex justify-center relative other-player-cards">
+                <div :for={card <- player.player_cards} class="w-12 relative">
+                  <img class="h-24 move-card" src={"/images/cards/#{card}.png"} alt="" />
+                </div>
               </div>
             </div>
           </div>
@@ -120,7 +122,11 @@
     </section>
   </main>
   <footer class="min-h-28 flex flex-col">
-    <div :if={not @game_state.hand_over} id="bet-chips" class="flex justify-center">
+    <div
+      :if={@shared_game_state.game_flow.phase == "bet"}
+      id="bet-chips"
+      class="flex justify-center"
+    >
       <div class="relative w-28 max-w-28">
         <img class="absolute w-28 max-w-28 -top-10" src="/images/red_chip.png" alt="" />
         <button
