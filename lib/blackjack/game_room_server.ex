@@ -38,6 +38,7 @@ defmodule MyApp.GameRoomServer do
     case phase do
       "reset" -> GenServer.cast(self(), :reset_phase)
       "bet" -> GenServer.cast(self(), :bet_phase)
+      "play" -> GenServer.cast(self(), :play_phase)
     end
   end
 
@@ -191,6 +192,7 @@ defmodule MyApp.GameRoomServer do
     end
   end
 
+  
   def handle_cast({:timer_up, game_id}, state) do
     # Call game_flow or any other process to move to the next phase
     # game_flow(state.game_id)
@@ -204,24 +206,15 @@ defmodule MyApp.GameRoomServer do
     IO.inspect("handle_cast place bet")
     IO.inspect(player_id)
     IO.inspect(player_bet)
-    players = state.players
-    position = Enum.find_index(players, fn player -> Map.get(player, :player_id) == player_id end)
-    IO.inspect(position, label: "position")
+    # players = state.players
+    position =
+      Enum.find_index(state.players, fn player -> Map.get(player, :player_id) == player_id end)
+
+    player = Enum.find(state.players, fn player -> player.player_id == player_id end)
+    player_w_bet = Map.put(player, :player_bet, player_bet)
 
     new_players =
-      List.replace_at(players, position, %{
-        table_seat: 5,
-        player_id: 4,
-        player_bet: player_bet,
-        player_name: "Revelry",
-        bet_placed: false,
-        player_count: 0,
-        player_ace_high_count: 0,
-        player_cards: [],
-        hand_over: false,
-        player_won: false,
-        active_move: true
-      })
+      List.replace_at(state.players, position, player_w_bet)
 
     IO.inspect(new_players, label: "new state")
     new_state = Map.put(state, :players, new_players)
@@ -236,7 +229,8 @@ defmodule MyApp.GameRoomServer do
   end
 
   def handle_cast(:bet_phase, game_state) do
-    chair = Enum.at(game_state.players, game_state.game_flow.active_seat)
+    chair = Enum.at(game_state.players, game_state.game_flow.active_seat - 1)
+    IO.inspect(game_state.game_flow.active_seat, label: "game flow active seat")
 
     if isPlayer?(chair) do
       IO.inspect("found active player")
@@ -246,11 +240,106 @@ defmodule MyApp.GameRoomServer do
         new_chair = Map.put(chair, :active_move, true)
 
         new_players =
-          List.replace_at(game_state.players, game_state.game_flow.active_seat, new_chair)
+          List.replace_at(game_state.players, game_state.game_flow.active_seat - 1, new_chair)
 
         new_game_state =
           Map.put(game_state, :players, new_players)
 
+        IO.inspect(new_game_state, label: "player not active move new game state")
+        Process.send_after(self(), :next_phase, 5000)
+        broadcast_to_pubsub(:game_state_update, game_state.game_id, new_game_state)
+        {:noreply, new_game_state}
+      else
+        IO.inspect("player has active move")
+
+        if chair.player_bet == 0 do
+          IO.inspect("kicking player out of seat")
+          # kick player out of seat, you have to bet to play!!
+          new_players =
+            List.replace_at(game_state.players, game_state.game_flow.active_seat - 1, %{
+              table_seat: 0,
+              player_id: 0
+            })
+
+          new_game_state =
+            Map.put(game_state, :players, new_players)
+
+          new_game_state_move_seat =
+            put_in(
+              new_game_state[:game_flow][:active_seat],
+              new_game_state.game_flow.active_seat + 1
+            )
+
+          Process.send_after(self(), :next_phase, 100)
+          broadcast_to_pubsub(:game_state_update, game_state.game_id, new_game_state_move_seat)
+          {:noreply, new_game_state_move_seat}
+        else
+          new_chair = Map.put(chair, :active_move, false)
+
+          new_players =
+            List.replace_at(game_state.players, game_state.game_flow.active_seat - 1, new_chair)
+
+          new_game_state =
+            Map.put(game_state, :players, new_players)
+
+          new_game_state_move_seat =
+            put_in(
+              new_game_state[:game_flow][:active_seat],
+              new_game_state.game_flow.active_seat + 1
+            )
+
+          check_for_last_seat =
+            if game_state.game_flow.active_seat == 5 do
+              new_game_flow = Map.put(new_game_state.game_flow, :phase, "play")
+              new_active_seat = Map.put(new_game_flow, :active_seat, 1)
+              Map.put(new_game_state, :game_flow, new_active_seat)
+            else
+              new_game_state_move_seat
+            end
+
+          Process.send_after(self(), :next_phase, 100)
+          broadcast_to_pubsub(:game_state_update, game_state.game_id, new_game_state_move_seat)
+          {:noreply, check_for_last_seat}
+        end
+      end
+    else
+      IO.inspect("increment one active player")
+
+      new_game_state =
+        put_in(game_state[:game_flow][:active_seat], game_state.game_flow.active_seat + 1)
+
+      check_for_last_seat =
+        if game_state.game_flow.active_seat == 5 do
+          new_game_flow = Map.put(new_game_state.game_flow, :phase, "play")
+          new_active_seat = Map.put(new_game_flow, :active_seat, 1)
+          Map.put(new_game_state, :game_flow, new_active_seat)
+        else
+          new_game_state
+        end
+
+      Process.send_after(self(), :next_phase, 100)
+      {:noreply, check_for_last_seat}
+    end
+  end
+
+  def handle_cast(:play_phase, game_state) do
+    chair = Enum.at(game_state.players, game_state.game_flow.active_seat - 1)
+    IO.inspect(game_state.game_flow.active_seat, label: "game flow active seat")
+
+    if isPlayer?(chair) do
+      IO.inspect("found active player")
+
+      if not chair.active_move do
+        IO.inspect("player not active move")
+        new_chair = Map.put(chair, :active_move, true)
+
+        new_players =
+          List.replace_at(game_state.players, game_state.game_flow.active_seat - 1, new_chair)
+
+        new_game_state =
+          Map.put(game_state, :players, new_players)
+
+        IO.inspect(new_game_state, label: "player not active move new game state")
         Process.send_after(self(), :next_phase, 5000)
         {:noreply, new_game_state}
       else
@@ -260,7 +349,7 @@ defmodule MyApp.GameRoomServer do
           IO.inspect("kicking player out of seat")
           # kick player out of seat, you have to bet to play!!
           new_players =
-            List.replace_at(game_state.players, game_state.game_flow.active_seat, %{
+            List.replace_at(game_state.players, game_state.game_flow.active_seat - 1, %{
               table_seat: 0,
               player_id: 0
             })
@@ -268,19 +357,31 @@ defmodule MyApp.GameRoomServer do
           new_game_state =
             Map.put(game_state, :players, new_players)
 
-          broadcast_to_pubsub(:game_state_update, game_state.game_id, new_game_state)
-          {:noreply, new_game_state}
+          new_game_state_move_seat =
+            put_in(
+              new_game_state[:game_flow][:active_seat],
+              new_game_state.game_flow.active_seat + 1
+            )
+
+          broadcast_to_pubsub(:game_state_update, game_state.game_id, new_game_state_move_seat)
+          {:noreply, new_game_state_move_seat}
         else
           new_chair = Map.put(chair, :active_move, false)
 
           new_players =
-            List.replace_at(game_state.players, game_state.game_flow.active_seat, new_chair)
+            List.replace_at(game_state.players, game_state.game_flow.active_seat - 1, new_chair)
 
           new_game_state =
             Map.put(game_state, :players, new_players)
 
+          new_game_state_move_seat =
+            put_in(
+              new_game_state[:game_flow][:active_seat],
+              new_game_state.game_flow.active_seat + 1
+            )
+
           Process.send_after(self(), :next_phase, 100)
-          {:noreply, new_game_state}
+          {:noreply, new_game_state_move_seat}
         end
       end
     else
@@ -289,8 +390,17 @@ defmodule MyApp.GameRoomServer do
       new_game_state =
         put_in(game_state[:game_flow][:active_seat], game_state.game_flow.active_seat + 1)
 
+      check_for_last_seat =
+        if game_state.game_flow.active_seat == 5 do
+          new_game_flow = Map.put(new_game_state.game_flow, :phase, "play")
+          new_active_seat = Map.put(new_game_flow, :active_seat, 1)
+          Map.put(new_game_state, :game_flow, new_active_seat)
+        else
+          new_game_state
+        end
+
       Process.send_after(self(), :next_phase, 100)
-      {:noreply, new_game_state}
+      {:noreply, check_for_last_seat}
     end
   end
 

@@ -60,7 +60,7 @@ defmodule BlackjackWeb.TableLive.Play do
         %{"seat" => seat},
         %{assigns: %{current_player: current_player, table: table}} = socket
       ) do
-    IO.inspect("EVENT: sit_at_table")
+    # IO.inspect("EVENT: sit_at_table")
 
     # Add the player to the game room
     {seat_position, _} = Integer.parse(seat)
@@ -75,9 +75,9 @@ defmodule BlackjackWeb.TableLive.Play do
         _,
         %{assigns: %{current_player: current_player, table: table}} = socket
       ) do
-    IO.inspect("EVENT: get_up_from_table")
-    IO.inspect(table.id, label: "table id")
-    IO.inspect(current_player.id, label: "current_player id")
+    # IO.inspect("EVENT: get_up_from_table")
+    # IO.inspect(table.id, label: "table id")
+    # IO.inspect(current_player.id, label: "current_player id")
     MyApp.GameRoomServer.remove_player(table.id, current_player.id)
     {:noreply, redirect(socket, to: "/tables")}
   end
@@ -87,12 +87,12 @@ defmodule BlackjackWeb.TableLive.Play do
         _,
         %{assigns: %{current_player: current_player, table: table}} = socket
       ) do
-    IO.inspect("EVENT: get_up_from_table")
-    IO.inspect(table.id, label: "table id")
-    IO.inspect(current_player.id, label: "current_player id")
+    # IO.inspect("EVENT: get_up_from_table")
+    # IO.inspect(table.id, label: "table id")
+    # IO.inspect(current_player.id, label: "current_player id")
     MyApp.GameRoomServer.remove_player(table.id, current_player.id)
     game_state = MyApp.GameRoomServer.get_game_state(table.id)
-    IO.inspect(game_state, label: "SIT AT TABLE: shared game state")
+    # IO.inspect(game_state, label: "SIT AT TABLE: shared game state")
 
     {:noreply,
      assign(socket,
@@ -129,7 +129,7 @@ defmodule BlackjackWeb.TableLive.Play do
 
     # player = Enum.find(filtered_players, fn player -> player.player_id == current_player.id end)
 
-    IO.inspect(dealt_players, label: "NEW GAME: reset players")
+    # IO.inspect(dealt_players, label: "NEW GAME: reset players")
 
     # initial_state = GameLogic.initial_player_state(current_player.id, current_player.name, table.id)
 
@@ -152,7 +152,7 @@ defmodule BlackjackWeb.TableLive.Play do
     end
 
     socket = assign(socket, game_state: game_state_after_hit, sitting_at_table: true)
-    IO.inspect(socket)
+    # IO.inspect(socket)
     {:noreply, socket}
   end
 
@@ -162,30 +162,30 @@ defmodule BlackjackWeb.TableLive.Play do
         socket
       ) do
     # user_id = players.id
-    IO.inspect(socket, label: "Stand socket is ")
+    # IO.inspect(socket, label: "Stand socket is ")
     %{current_player: player, game_state: game_state} = socket.assigns
-    IO.inspect(player, label: "player")
-    IO.inspect(game_state, label: "game state")
+    # IO.inspect(player, label: "player")
+    # IO.inspect(game_state, label: "game state")
     game_state_after_hit = GameLogic.player_stands(game_state)
     player_chip_count = player.chip_count
-    IO.inspect(player_chip_count, label: "player chip count")
+    # IO.inspect(player_chip_count, label: "player chip count")
     account = Accounts.update_player(player, %{chip_count: 1200})
-    IO.inspect(account, label: "account is ")
+    # IO.inspect(account, label: "account is ")
 
     {:ok, updated_player} =
       if game_state_after_hit.hand_over and game_state_after_hit.player_won do
         new_chip_count = game_state.player_bet + player_chip_count
-        IO.inspect("this fired")
-        IO.inspect(new_chip_count)
+        # IO.inspect("this fired")
+        # IO.inspect(new_chip_count)
         Accounts.update_player(player, %{chip_count: new_chip_count})
       else
-        IO.inspect("use original player")
+        # IO.inspect("use original player")
         {:ok, player}
       end
 
     # why does this have to refresh to show true chip value including winnings???
-    IO.inspect("socket returned from Stand")
-    IO.inspect(socket.assigns)
+    # IO.inspect("socket returned from Stand")
+    # IO.inspect(socket.assigns)
     # |> assign(:players, Tables.get_player!(user_id))
 
     {:noreply,
@@ -196,12 +196,12 @@ defmodule BlackjackWeb.TableLive.Play do
   end
 
   def handle_event("add-to-bet", %{"chips" => chips}, socket) do
-    IO.inspect(chips)
+    # IO.inspect(chips)
     {chip_value, _} = Integer.parse(chips)
     game_state = socket.assigns.game_state
     new_game_state = Map.put(game_state, :player_bet, game_state.player_bet + chip_value)
     socket = assign(socket, game_state: new_game_state, sitting_at_table: true)
-    IO.inspect(socket)
+    # IO.inspect(socket)
     {:noreply, socket}
   end
 
@@ -210,18 +210,18 @@ defmodule BlackjackWeb.TableLive.Play do
     game_state = socket.assigns.game_state
     new_game_state = Map.put(game_state, :player_bet, player_chips)
     socket = assign(socket, game_state: new_game_state, sitting_at_table: true)
-    IO.inspect(socket)
+    # IO.inspect(socket)
     {:noreply, socket}
   end
 
   def handle_event("remove-from-bet", %{"chips" => chips}, socket) do
-    IO.inspect(chips)
+    # IO.inspect(chips)
     chips_parse = Integer.parse(chips)
     chip_value = elem(chips_parse, 0)
     game_state = socket.assigns.game_state
     new_game_state = Map.put(game_state, :player_bet, game_state.player_bet - chip_value)
     socket = assign(socket, game_state: new_game_state, sitting_at_table: true)
-    IO.inspect(socket)
+    # IO.inspect(socket)
     {:noreply, socket}
   end
 
@@ -229,7 +229,7 @@ defmodule BlackjackWeb.TableLive.Play do
     game_state = socket.assigns.game_state
     new_game_state = Map.put(game_state, :player_bet, 0)
     socket = assign(socket, game_state: new_game_state, sitting_at_table: true)
-    IO.inspect(socket)
+    # IO.inspect(socket)
     {:noreply, socket}
   end
 
@@ -279,7 +279,7 @@ defmodule BlackjackWeb.TableLive.Play do
       end
 
     # IO.inspect(player, label: "player")
-
+    # IO.inspect(new_state, label: "new state in handle info")
     # {:noreply, assign(socket, shared_game_state: new_state, game_state: player)}
     {:noreply, assign(socket, shared_game_state: new_state, game_state: player)}
   end
@@ -290,7 +290,7 @@ defmodule BlackjackWeb.TableLive.Play do
   # def terminate(_reason, socket) do
   #   game_id = socket.assigns.table.id
   #   player_id = socket.assigns.current_player.id
-  #   IO.inspect(socket, label: "socket in terminate")
+  # IO.inspect(socket, label: "socket in terminate")
 
   #   # Remove the player from the game room
   #   MyApp.GameRoomServer.remove_player(game_id, player_id)

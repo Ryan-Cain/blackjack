@@ -232,3 +232,12 @@ body {
 } */
 
 /* transform: translate(-300px, 300px) scale(0.5); Start at dealer's deck (relative to player) */
+#pick-a-seat > button {
+  z-index: 20;
+}
+
+.timer {
+  position: absolute;
+  bottom: 150px;
+  left: 50px;
+}
