@@ -1,7 +1,7 @@
 defmodule BlackjackWeb.TableLive.Play do
-  alias MyApp.GameRoomServer
   use BlackjackWeb, :live_view
 
+  alias MyApp.GameRoomServer
   alias Blackjack.Games
   # alias Blackjack.Tables
   alias Blackjack.Accounts
@@ -23,7 +23,6 @@ defmodule BlackjackWeb.TableLive.Play do
       end
     end
 
-    # Fetch the current game state
     game_state = MyApp.GameRoomServer.get_game_state(game_id_int)
     # players = game_state.players
     # player_at_table = Enum.any?(players, fn map -> map[:player_id] == player_id end)
@@ -65,7 +64,7 @@ defmodule BlackjackWeb.TableLive.Play do
     # Add the player to the game room
     {seat_position, _} = Integer.parse(seat)
     player_info = %{current_player: current_player, seat_position: seat_position}
-    MyApp.GameRoomServer.add_player(table.id, player_info)
+    MyApp.GameRoomServer.add_player(table, player_info)
     {:noreply, socket}
   end
 

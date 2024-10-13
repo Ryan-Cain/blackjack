@@ -2,6 +2,7 @@
 defmodule MyApp.GameRoomServer do
   use GenServer
 
+  alias Blackjack.Games
   alias Blackjack.Logic.GameLogic
 
   # kicking off game room gen server
@@ -10,7 +11,13 @@ defmodule MyApp.GameRoomServer do
       __MODULE__,
       %{
         game_id: game_id,
-        game_flow: %{phase: "reset", active_seat: 1},
+        game_flow: %{
+          phase: "reset",
+          active_seat: 1,
+          countdown: 0,
+          timer_total: 0,
+          timer_amount: 0
+        },
         dealer: GameLogic.initial_dealer_state(game_id),
         players: [
           %{table_seat: 0, player_id: 0},
@@ -31,9 +38,9 @@ defmodule MyApp.GameRoomServer do
   def game_flow(game_state) do
     # game_state = GenServer.call(via_tuple(game_id), :get_state)
     # game_id = game_state.game_id
-    IO.inspect(game_state, label: "game_flow() game_state")
+    # IO.inspect(game_state, label: "game_flow() game_state")
     phase = game_state.game_flow.phase
-    IO.inspect(phase, label: "game_flow() phase")
+    # IO.inspect(phase, label: "game_flow() phase")
 
     case phase do
       "reset" -> GenServer.cast(self(), :reset_phase)
@@ -47,9 +54,9 @@ defmodule MyApp.GameRoomServer do
   end
 
   # Public API to add a player when they join the room
-  def add_player(game_id, player_info) do
-    IO.inspect(player_info, label: "add player2")
-    GenServer.cast(via_tuple(game_id), {:add_player, player_info})
+  def add_player(table, player_info) do
+    # IO.inspect(player_info, label: "add player2")
+    GenServer.cast(via_tuple(table.id), {:add_player, %{player_info: player_info, table: table}})
   end
 
   # Public API to remove a player when they leave the room
@@ -129,7 +136,11 @@ defmodule MyApp.GameRoomServer do
   end
 
   def init(state) do
-    {:ok, state}
+    table = Games.get_table!(state.game_id)
+    game_flow_add_count_down = Map.put(state.game_flow, :count_down, table.countdown)
+    game_flow_add_timer_amount = Map.put(game_flow_add_count_down, :timer_amount, table.countdown)
+    new_game_state = Map.put(state, :game_flow, game_flow_add_timer_amount)
+    {:ok, new_game_state}
   end
 
   def remove_hidden_dealer_card(state) do
@@ -143,7 +154,8 @@ defmodule MyApp.GameRoomServer do
 
   # Handle adding a player
   def handle_cast(
-        {:add_player, %{seat_position: seat, current_player: current_player}},
+        {:add_player,
+         %{player_info: %{seat_position: seat, current_player: current_player}, table: table}},
         state
       ) do
     player =
@@ -153,12 +165,18 @@ defmodule MyApp.GameRoomServer do
     has_map_with_value = Enum.any?(players, fn map -> map[:player_id] == current_player.id end)
     seat_taken = Enum.any?(players, fn map -> map[:table_seat] == seat end)
 
+    add_time =
+      put_in(
+        state[:game_flow][:timer_total],
+        table.countdown
+      )
+
     if has_map_with_value or seat_taken do
-      {:noreply, state}
+      {:noreply, add_time}
     else
       new_state =
         Map.put(
-          state,
+          add_time,
           :players,
           List.replace_at(players, seat - 1, player)
         )
@@ -190,16 +208,6 @@ defmodule MyApp.GameRoomServer do
     else
       {:noreply, new_state}
     end
-  end
-
-  
-  def handle_cast({:timer_up, game_id}, state) do
-    # Call game_flow or any other process to move to the next phase
-    # game_flow(state.game_id)
-    IO.inspect(state, label: "state in timer up ")
-    IO.inspect(game_id)
-    Process.send_after(self(), :timer_up_action, 5000)
-    {:noreply, state}
   end
 
   def handle_cast({:place_bet, %{player_id: player_id, player_bet: player_bet}}, state) do
@@ -246,7 +254,8 @@ defmodule MyApp.GameRoomServer do
           Map.put(game_state, :players, new_players)
 
         IO.inspect(new_game_state, label: "player not active move new game state")
-        Process.send_after(self(), :next_phase, 5000)
+        # Process.send_after(self(), :next_phase, 5000)
+        Process.send_after(self(), :start_countdown, 1000)
         broadcast_to_pubsub(:game_state_update, game_state.game_id, new_game_state)
         {:noreply, new_game_state}
       else
@@ -340,7 +349,8 @@ defmodule MyApp.GameRoomServer do
           Map.put(game_state, :players, new_players)
 
         IO.inspect(new_game_state, label: "player not active move new game state")
-        Process.send_after(self(), :next_phase, 5000)
+        # Process.send_after(self(), :next_phase, 5000)
+        # GenServer.cast(self(), :start_countdown)
         {:noreply, new_game_state}
       else
         IO.inspect("player has active move")
@@ -441,6 +451,44 @@ defmodule MyApp.GameRoomServer do
     # Call game_flow or any other process to move to the next phase
     game_flow(state)
     {:noreply, state}
+  end
+
+  def handle_info(:start_countdown, state) do
+    # new_state =
+    #   put_in(state[:game_flow][:countdown], state.game_flow.countdown - 1)
+
+    new_state_reset =
+      if state.game_flow.countdown == -1 do
+        Process.send_after(self(), :next_phase, 100)
+        put_in(state[:game_flow][:countdown], state.game_flow.timer_total)
+      else
+        remainder = div(100, state.game_flow.timer_total)
+        mult = remainder * state.game_flow.countdown
+        amount = 100 - mult
+
+        # IO.inspect(state.game_flow.countdown, label: "countdown")
+        # IO.inspect(remainder, label: "remainder")
+        # IO.inspect(mult, label: "mult")
+        # IO.inspect(amount, label: "amount")
+        game_flow = state.game_flow
+        game_flow_w_timer = Map.put(game_flow, :timer_amount, amount)
+
+        Process.send_after(self(), :start_countdown, 1000)
+        Map.put(state, :game_flow, game_flow_w_timer)
+      end
+
+    broadcast_to_pubsub(:game_state_update, state.game_id, new_state_reset)
+
+    game_flow_w_countdown =
+      if state.game_flow.countdown == -1 do
+        new_state_reset
+      else
+        game_flow = new_state_reset.game_flow
+        new_game_flow = Map.put(game_flow, :countdown, state.game_flow.countdown - 1)
+        Map.put(state, :game_flow, new_game_flow)
+      end
+
+    {:noreply, game_flow_w_countdown}
   end
 
   # Return the current state
