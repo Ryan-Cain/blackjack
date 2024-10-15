@@ -17,7 +17,12 @@
 
 <.back navigate={~p"/players"}>Back to players</.back>
 
-<.modal :if={@live_action == :edit} id="player-modal" show on_cancel={JS.patch(~p"/players/#{@player}")}>
+<.modal
+  :if={@live_action == :edit}
+  id="player-modal"
+  show
+  on_cancel={JS.patch(~p"/players/#{@player}")}
+>
   <.live_component
     module={BlackjackWeb.PlayerLive.FormComponent}
     id={@player.id}

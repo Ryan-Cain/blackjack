@@ -21,7 +21,12 @@ defmodule Blackjack.GamesTest do
     end
 
     test "create_table/1 with valid data creates a table" do
-      valid_attrs = %{name: "some name", table_min: 42, countdown: 42, table_color: "some table_color"}
+      valid_attrs = %{
+        name: "some name",
+        table_min: 42,
+        countdown: 42,
+        table_color: "some table_color"
+      }
 
       assert {:ok, %Table{} = table} = Games.create_table(valid_attrs)
       assert table.name == "some name"
@@ -36,7 +41,13 @@ defmodule Blackjack.GamesTest do
 
     test "update_table/2 with valid data updates the table" do
       table = table_fixture()
-      update_attrs = %{name: "some updated name", table_min: 43, countdown: 43, table_color: "some updated table_color"}
+
+      update_attrs = %{
+        name: "some updated name",
+        table_min: 43,
+        countdown: 43,
+        table_color: "some updated table_color"
+      }
 
       assert {:ok, %Table{} = table} = Games.update_table(table, update_attrs)
       assert table.name == "some updated name"

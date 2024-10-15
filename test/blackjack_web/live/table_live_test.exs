@@ -4,8 +4,18 @@ defmodule BlackjackWeb.TableLiveTest do
   import Phoenix.LiveViewTest
   import Blackjack.GamesFixtures
 
-  @create_attrs %{name: "some name", table_min: 42, countdown: 42, table_color: "some table_color"}
-  @update_attrs %{name: "some updated name", table_min: 43, countdown: 43, table_color: "some updated table_color"}
+  @create_attrs %{
+    name: "some name",
+    table_min: 42,
+    countdown: 42,
+    table_color: "some table_color"
+  }
+  @update_attrs %{
+    name: "some updated name",
+    table_min: 43,
+    countdown: 43,
+    table_color: "some updated table_color"
+  }
   @invalid_attrs %{name: nil, table_min: nil, countdown: nil, table_color: nil}
 
   defp create_table(_) do
