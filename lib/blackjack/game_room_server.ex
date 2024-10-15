@@ -2,6 +2,8 @@
 defmodule MyApp.GameRoomServer do
   use GenServer
 
+  alias Blackjack.Accounts
+  alias Blackjack.Accounts.Player
   alias Blackjack.Games
   alias Blackjack.Logic.GameLogic
 
@@ -12,6 +14,7 @@ defmodule MyApp.GameRoomServer do
       %{
         game_id: game_id,
         game_flow: %{
+          first_game: true,
           phase: "reset",
           active_seat: 1,
           countdown: 0,
@@ -35,68 +38,35 @@ defmodule MyApp.GameRoomServer do
     GenServer.cast(via_tuple(game_id), :start_game)
   end
 
-  def game_flow(game_state) do
-    # game_state = GenServer.call(via_tuple(game_id), :get_state)
-    # game_id = game_state.game_id
-    # IO.inspect(game_state, label: "game_flow() game_state")
-    phase = game_state.game_flow.phase
-    # IO.inspect(phase, label: "game_flow() phase")
-
+  def game_flow(%{game_flow: %{phase: phase}}) do
     case phase do
       "reset" -> GenServer.cast(self(), :reset_phase)
       "bet" -> GenServer.cast(self(), :bet_phase)
+      "deal" -> GenServer.cast(self(), :deal_phase)
       "play" -> GenServer.cast(self(), :play_phase)
+      "final" -> GenServer.cast(self(), :final_phase)
+      "pause" -> IO.inspect("paused")
     end
   end
 
-  def isPlayer?(player) do
-    player.player_id > 0
-  end
-
-  # Public API to add a player when they join the room
   def add_player(table, player_info) do
-    # IO.inspect(player_info, label: "add player2")
     GenServer.cast(via_tuple(table.id), {:add_player, %{player_info: player_info, table: table}})
   end
 
-  # Public API to remove a player when they leave the room
   def remove_player(game_id, player_id) do
     GenServer.cast(via_tuple(game_id), {:remove_player, player_id})
   end
 
-  # Public API to get the current state
+  def player_hit(table_id, player_id) do
+    GenServer.cast(via_tuple(table_id), {:player_hit, %{player_id: player_id}})
+  end
+
+  def player_stands(table_id, player_id) do
+    GenServer.cast(via_tuple(table_id), {:player_stands, %{player_id: player_id}})
+  end
+
   def get_game_state(game_id) do
-    # shared = GenServer.call(via_tuple(game_id), :get_state)
-
-    # player =
-    #   Enum.find(shared.players, fn player -> foundPlayer?(player, player_id) end)
-
-    # %{shared: shared, player: player}
-    # %{shared: shared}
     GenServer.call(via_tuple(game_id), :get_state)
-  end
-
-  def foundPlayer?(player, player_id) do
-    map_size(player) > 1 and player.player_id == player_id
-  end
-
-  def deal_all_players(game_id) do
-    table = GenServer.call(via_tuple(game_id), :get_state)
-    players = table.players
-
-    dealer =
-      GameLogic.hit(table.dealer, :dealer)
-      |> GameLogic.hit(:dealer)
-
-    reset_players =
-      Enum.map(players, fn player ->
-        check_and_deal_player(player)
-      end)
-
-    new_table = Map.put(table, :players, reset_players)
-    table_w_dealer = Map.put(new_table, :dealer, dealer)
-    GenServer.cast(self(), {:update_state_broadcast, table_w_dealer})
-    %{shared: table_w_dealer}
   end
 
   def check_and_deal_player(player) do
@@ -111,6 +81,13 @@ defmodule MyApp.GameRoomServer do
   def place_bet(game_id, player_id, player_bet) do
     bet = %{player_id: player_id, player_bet: player_bet}
     GenServer.cast(via_tuple(game_id), {:place_bet, bet})
+  end
+
+  def player_all_in(player_id, table_id) do
+    player = Accounts.get_player!(player_id)
+    IO.inspect(player, label: "player all in")
+    bet = %{player_id: player_id, player_bet: player.chip_count}
+    GenServer.cast(via_tuple(table_id), {:change_bet_value, bet})
   end
 
   def initial_game_state(player_id, player_name, table_seat) do
@@ -136,9 +113,10 @@ defmodule MyApp.GameRoomServer do
   end
 
   def init(state) do
+    IO.inspect("init()")
     table = Games.get_table!(state.game_id)
-    game_flow_add_count_down = Map.put(state.game_flow, :count_down, table.countdown)
-    game_flow_add_timer_amount = Map.put(game_flow_add_count_down, :timer_amount, table.countdown)
+    game_flow_add_count_down = Map.put(state.game_flow, :countdown, table.countdown)
+    game_flow_add_timer_amount = Map.put(game_flow_add_count_down, :timer_total, table.countdown)
     new_game_state = Map.put(state, :game_flow, game_flow_add_timer_amount)
     {:ok, new_game_state}
   end
@@ -158,10 +136,12 @@ defmodule MyApp.GameRoomServer do
          %{player_info: %{seat_position: seat, current_player: current_player}, table: table}},
         state
       ) do
-    player =
-      GameLogic.initial_player_state(current_player.id, current_player.name, seat, state.game_id)
+    IO.inspect("handle_cast() _ :add_player")
 
-    players = Map.get(state, :players, [])
+    player =
+      GameLogic.initial_player_state(current_player.id, current_player.name, seat)
+
+    players = Map.get(state, :players)
     has_map_with_value = Enum.any?(players, fn map -> map[:player_id] == current_player.id end)
     seat_taken = Enum.any?(players, fn map -> map[:table_seat] == seat end)
 
@@ -180,6 +160,15 @@ defmodule MyApp.GameRoomServer do
           :players,
           List.replace_at(players, seat - 1, player)
         )
+
+      position = Enum.find_index(players, fn player -> Map.get(player, :player_id) > 0 end)
+
+      if position == nil do
+        IO.inspect("start game from add player")
+        Process.send_after(self(), :timer_countdown, 2000)
+      end
+
+      IO.inspect(position, label: "position")
 
       broadcast_to_pubsub(:game_state_update, new_state.game_id, new_state)
 
@@ -200,7 +189,7 @@ defmodule MyApp.GameRoomServer do
 
     broadcast_to_pubsub(:game_state_update, new_state.game_id, new_state)
 
-    if Enum.all?(new_players, fn player -> player == %{} end) do
+    if Enum.all?(new_players, fn player -> player.player_id == 0 end) do
       IO.inspect("no players remain, shutting down gen server")
       # Stop the GenServer if no players remain
 
@@ -210,11 +199,9 @@ defmodule MyApp.GameRoomServer do
     end
   end
 
-  def handle_cast({:place_bet, %{player_id: player_id, player_bet: player_bet}}, state) do
+  def handle_cast({:change_bet_value, %{player_id: player_id, player_bet: player_bet}}, state) do
     IO.inspect("handle_cast place bet")
-    IO.inspect(player_id)
-    IO.inspect(player_bet)
-    # players = state.players
+
     position =
       Enum.find_index(state.players, fn player -> Map.get(player, :player_id) == player_id end)
 
@@ -224,7 +211,58 @@ defmodule MyApp.GameRoomServer do
     new_players =
       List.replace_at(state.players, position, player_w_bet)
 
-    IO.inspect(new_players, label: "new state")
+    new_state = Map.put(state, :players, new_players)
+    broadcast_to_pubsub(:game_state_update, state.game_id, new_state)
+    {:noreply, new_state}
+  end
+
+  def handle_cast({:place_bet, %{player_id: player_id, player_bet: player_bet}}, state) do
+    IO.inspect("handle_cast place bet")
+
+    position =
+      Enum.find_index(state.players, fn player -> Map.get(player, :player_id) == player_id end)
+
+    player = Enum.find(state.players, fn player -> player.player_id == player_id end)
+    player_w_bet = Map.put(player, :player_bet, player_bet)
+    player_placed_bet = Map.put(player_w_bet, :bet_placed, true)
+
+    new_players =
+      List.replace_at(state.players, position, player_placed_bet)
+
+    new_state = Map.put(state, :players, new_players)
+    broadcast_to_pubsub(:game_state_update, state.game_id, new_state)
+    {:noreply, new_state}
+  end
+
+  def handle_cast({:player_hit, %{player_id: player_id}}, state) do
+    IO.inspect("handle_cast player_hit")
+
+    position =
+      Enum.find_index(state.players, fn player -> Map.get(player, :player_id) == player_id end)
+
+    player = Enum.find(state.players, fn player -> player.player_id == player_id end)
+    player_after_hit = GameLogic.hit(player, :player)
+
+    new_players =
+      List.replace_at(state.players, position, player_after_hit)
+
+    new_state = Map.put(state, :players, new_players)
+    broadcast_to_pubsub(:game_state_update, state.game_id, new_state)
+    {:noreply, new_state}
+  end
+
+  def handle_cast({:player_stands, %{player_id: player_id}}, state) do
+    IO.inspect("handle_cast player_hit")
+
+    position =
+      Enum.find_index(state.players, fn player -> Map.get(player, :player_id) == player_id end)
+
+    player = Enum.find(state.players, fn player -> player.player_id == player_id end)
+    player_after_stand = GameLogic.player_stands(player)
+
+    new_players =
+      List.replace_at(state.players, position, player_after_stand)
+
     new_state = Map.put(state, :players, new_players)
     broadcast_to_pubsub(:game_state_update, state.game_id, new_state)
     {:noreply, new_state}
@@ -238,7 +276,11 @@ defmodule MyApp.GameRoomServer do
 
   def handle_cast(:bet_phase, game_state) do
     chair = Enum.at(game_state.players, game_state.game_flow.active_seat - 1)
-    IO.inspect(game_state.game_flow.active_seat, label: "game flow active seat")
+    IO.inspect("handle_cast() - :bet_phase")
+
+    IO.inspect(game_state.game_flow.active_seat,
+      label: "handle_cast() - :bet_phase - game flow active seat"
+    )
 
     if isPlayer?(chair) do
       IO.inspect("found active player")
@@ -255,7 +297,7 @@ defmodule MyApp.GameRoomServer do
 
         IO.inspect(new_game_state, label: "player not active move new game state")
         # Process.send_after(self(), :next_phase, 5000)
-        Process.send_after(self(), :start_countdown, 1000)
+        Process.send_after(self(), :timer_countdown, 1000)
         broadcast_to_pubsub(:game_state_update, game_state.game_id, new_game_state)
         {:noreply, new_game_state}
       else
@@ -299,7 +341,7 @@ defmodule MyApp.GameRoomServer do
 
           check_for_last_seat =
             if game_state.game_flow.active_seat == 5 do
-              new_game_flow = Map.put(new_game_state.game_flow, :phase, "play")
+              new_game_flow = Map.put(new_game_state.game_flow, :phase, "deal")
               new_active_seat = Map.put(new_game_flow, :active_seat, 1)
               Map.put(new_game_state, :game_flow, new_active_seat)
             else
@@ -319,7 +361,7 @@ defmodule MyApp.GameRoomServer do
 
       check_for_last_seat =
         if game_state.game_flow.active_seat == 5 do
-          new_game_flow = Map.put(new_game_state.game_flow, :phase, "play")
+          new_game_flow = Map.put(new_game_state.game_flow, :phase, "deal")
           new_active_seat = Map.put(new_game_flow, :active_seat, 1)
           Map.put(new_game_state, :game_flow, new_active_seat)
         else
@@ -333,13 +375,17 @@ defmodule MyApp.GameRoomServer do
 
   def handle_cast(:play_phase, game_state) do
     chair = Enum.at(game_state.players, game_state.game_flow.active_seat - 1)
-    IO.inspect(game_state.game_flow.active_seat, label: "game flow active seat")
+    IO.inspect("handle_cast() - :play_phase")
+
+    IO.inspect(game_state.game_flow.active_seat,
+      label: "handle_cast() - :play_phase - game flow active seat"
+    )
 
     if isPlayer?(chair) do
-      IO.inspect("found active player")
+      IO.inspect("play phase - found active player")
 
       if not chair.active_move do
-        IO.inspect("player not active move")
+        IO.inspect("play phase - player not active move")
         new_chair = Map.put(chair, :active_move, true)
 
         new_players =
@@ -348,15 +394,16 @@ defmodule MyApp.GameRoomServer do
         new_game_state =
           Map.put(game_state, :players, new_players)
 
-        IO.inspect(new_game_state, label: "player not active move new game state")
+        IO.inspect(new_game_state, label: "play phase - player not active move new game state")
         # Process.send_after(self(), :next_phase, 5000)
-        # GenServer.cast(self(), :start_countdown)
+        Process.send_after(self(), :timer_countdown, 100)
+        broadcast_to_pubsub(:game_state_update, game_state.game_id, new_game_state)
         {:noreply, new_game_state}
       else
-        IO.inspect("player has active move")
+        IO.inspect("play phase - player has active move")
 
         if chair.player_bet == 0 do
-          IO.inspect("kicking player out of seat")
+          IO.inspect("play phase - kicking player out of seat")
           # kick player out of seat, you have to bet to play!!
           new_players =
             List.replace_at(game_state.players, game_state.game_flow.active_seat - 1, %{
@@ -373,6 +420,7 @@ defmodule MyApp.GameRoomServer do
               new_game_state.game_flow.active_seat + 1
             )
 
+          Process.send_after(self(), :next_phase, 100)
           broadcast_to_pubsub(:game_state_update, game_state.game_id, new_game_state_move_seat)
           {:noreply, new_game_state_move_seat}
         else
@@ -390,19 +438,29 @@ defmodule MyApp.GameRoomServer do
               new_game_state.game_flow.active_seat + 1
             )
 
+          check_for_last_seat =
+            if game_state.game_flow.active_seat == 5 do
+              new_game_flow = Map.put(new_game_state.game_flow, :phase, "final")
+              new_active_seat = Map.put(new_game_flow, :active_seat, 1)
+              Map.put(new_game_state, :game_flow, new_active_seat)
+            else
+              new_game_state_move_seat
+            end
+
           Process.send_after(self(), :next_phase, 100)
-          {:noreply, new_game_state_move_seat}
+          broadcast_to_pubsub(:game_state_update, game_state.game_id, new_game_state_move_seat)
+          {:noreply, check_for_last_seat}
         end
       end
     else
-      IO.inspect("increment one active player")
+      IO.inspect("play phase - increment one active player")
 
       new_game_state =
         put_in(game_state[:game_flow][:active_seat], game_state.game_flow.active_seat + 1)
 
       check_for_last_seat =
         if game_state.game_flow.active_seat == 5 do
-          new_game_flow = Map.put(new_game_state.game_flow, :phase, "play")
+          new_game_flow = Map.put(new_game_state.game_flow, :phase, "final")
           new_active_seat = Map.put(new_game_flow, :active_seat, 1)
           Map.put(new_game_state, :game_flow, new_active_seat)
         else
@@ -412,6 +470,46 @@ defmodule MyApp.GameRoomServer do
       Process.send_after(self(), :next_phase, 100)
       {:noreply, check_for_last_seat}
     end
+  end
+
+  def handle_cast(:deal_phase, table) do
+    players = table.players
+
+    dealer =
+      GameLogic.hit(table.dealer, :dealer)
+      |> GameLogic.hit(:dealer)
+
+    reset_players =
+      Enum.map(players, fn player ->
+        check_and_deal_player(player)
+      end)
+
+    new_table = Map.put(table, :players, reset_players)
+    table_w_dealer = Map.put(new_table, :dealer, dealer)
+    table_update_phase = put_in(table_w_dealer[:game_flow][:phase], "play")
+
+    broadcast_to_pubsub(:game_state_update, table.game_id, table_update_phase)
+    Process.send_after(self(), :next_phase, 100)
+
+    {:noreply, table_update_phase}
+  end
+
+  def handle_cast(:final_phase, table) do
+    IO.inspect("final phase!!!")
+    players = table.players
+    table_updated_phase = Map.put(table.game_flow, :phase, "reset")
+
+    squared_up_players =
+      Enum.map(players, fn player ->
+        square_up_player(player, table.dealer)
+      end)
+
+    add_players = Map.put(table, :players, squared_up_players)
+    add_phase = Map.put(add_players, :game_flow, table_updated_phase)
+
+    broadcast_to_pubsub(:game_state_update, table.game_id, add_phase)
+    Process.send_after(self(), :next_phase, 100)
+    {:noreply, add_phase}
   end
 
   def handle_cast(:reset_phase, table) do
@@ -427,19 +525,49 @@ defmodule MyApp.GameRoomServer do
     add_dealer = Map.put(table, :dealer, reset_dealer)
     add_players = Map.put(add_dealer, :players, reset_players)
     add_phase = Map.put(add_players, :game_flow, table_updated_phase)
-    # removed_hidden_card = remove_hidden_dealer_card(new_table)
-    # GenServer.cast(self(), {:update_state_no_broadcast, removed_hidden_card})
     broadcast_to_pubsub(:game_state_update, table.game_id, add_phase)
+    Process.send_after(self(), :timer_countdown, 100)
     {:noreply, add_phase}
   end
 
+  def handle_cast(:show_state, state) do
+    # Call game_flow or any other process to move to the next phase
+    IO.inspect(state, label: "show state")
+    {:noreply, state}
+  end
+
+  def square_up_player(player, dealer) do
+    if player.player_id > 0 do
+      IO.inspect(player, label: "square up player")
+      player_db = Accounts.get_player!(player.player_id)
+      IO.inspect(player_db, label: "square up player")
+
+      if dealer.dealer_bust and not player.player_bust do
+        Accounts.update_player(player_db, %{chip_count: player_db.chip_count + player.player_bet})
+      else
+        if player.player_count > dealer.dealer_count do
+          Accounts.update_player(player_db, %{
+            chip_count: player_db.chip_count + player.player_bet
+          })
+        else
+          if player.player_count < dealer.dealer_count do
+            Accounts.update_player(player_db, %{
+              chip_count: player_db.chip_count - player.player_bet
+            })
+          end
+        end
+      end
+    end
+
+    player
+  end
+
   def check_and_reset_player(player) do
-    if player.table_seat > 0 do
+    if player.player_id > 0 do
       GameLogic.initial_player_state(
         player.player_id,
         player.player_name,
-        player.table_seat,
-        0
+        player.table_seat
       )
     else
       player
@@ -453,34 +581,49 @@ defmodule MyApp.GameRoomServer do
     {:noreply, state}
   end
 
-  def handle_info(:start_countdown, state) do
-    # new_state =
-    #   put_in(state[:game_flow][:countdown], state.game_flow.countdown - 1)
+  def handle_info(:timer_countdown, state) do
+    curr_player =
+      Enum.find(state.players, fn player -> player.table_seat == state.game_flow.active_seat end)
+
+    timer_up =
+      if curr_player do
+        if curr_player.player_id do
+          hand_over_or_bust = curr_player.hand_over or curr_player.player_bust
+          bet_phase_timer_up = curr_player.bet_placed and state.game_flow.phase == "bet"
+          play_phase_timer_up = hand_over_or_bust and state.game_flow.phase == "play"
+          bet_phase_timer_up or play_phase_timer_up
+        end
+      else
+        false
+      end
 
     new_state_reset =
-      if state.game_flow.countdown == -1 do
+      if state.game_flow.countdown == -1 or timer_up do
         Process.send_after(self(), :next_phase, 100)
-        put_in(state[:game_flow][:countdown], state.game_flow.timer_total)
+
+        state_reset_countdown = put_in(state[:game_flow][:countdown], state.game_flow.timer_total)
+        state_reset_timer_amount = put_in(state_reset_countdown[:game_flow][:timer_amount], 0)
+        put_in(state_reset_timer_amount[:game_flow][:first_game], false)
       else
         remainder = div(100, state.game_flow.timer_total)
         mult = remainder * state.game_flow.countdown
         amount = 100 - mult
 
-        # IO.inspect(state.game_flow.countdown, label: "countdown")
-        # IO.inspect(remainder, label: "remainder")
-        # IO.inspect(mult, label: "mult")
-        # IO.inspect(amount, label: "amount")
+        IO.inspect(state.game_flow.countdown, label: "countdown")
+        IO.inspect(remainder, label: "remainder")
+        IO.inspect(mult, label: "mult")
+        IO.inspect(amount, label: "amount")
         game_flow = state.game_flow
         game_flow_w_timer = Map.put(game_flow, :timer_amount, amount)
 
-        Process.send_after(self(), :start_countdown, 1000)
+        Process.send_after(self(), :timer_countdown, 1000)
         Map.put(state, :game_flow, game_flow_w_timer)
       end
 
     broadcast_to_pubsub(:game_state_update, state.game_id, new_state_reset)
 
     game_flow_w_countdown =
-      if state.game_flow.countdown == -1 do
+      if state.game_flow.countdown == -1 or timer_up do
         new_state_reset
       else
         game_flow = new_state_reset.game_flow
@@ -494,6 +637,19 @@ defmodule MyApp.GameRoomServer do
   # Return the current state
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
+  end
+
+  def get_more_chips(player_id) do
+    player_db = Accounts.get_player!(player_id)
+    Accounts.update_player(player_db, %{chip_count: 500})
+  end
+
+  def show_state(id) do
+    GenServer.cast(via_tuple(id), :show_state)
+  end
+
+  defp isPlayer?(player) do
+    player.player_id > 0
   end
 
   defp broadcast_to_pubsub(message, game_id, state) do

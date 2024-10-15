@@ -1,23 +1,19 @@
 defmodule Blackjack.Logic.GameLogic do
-  def initial_player_state(player_id, player_name, table_seat, table_id) do
+  def initial_player_state(player_id, player_name, table_seat) do
     state = %{
       player_id: player_id,
       player_name: player_name,
       active_move: false,
-      # table_id: table_id,
       table_seat: table_seat,
       player_bet: 0,
       bet_placed: false,
       player_count: 0,
       player_ace_high_count: 0,
       player_cards: [],
-      # dealer_count: 0,
-      # dealer_ace_high_count: 0,
-      # dealer_cards: [],
-      # dealer_hidden_card: "",
-      # dealer_bust: false,
       hand_over: false,
-      player_won: false
+      player_won: false,
+      player_bust: false,
+      player_stands: false
     }
 
     state
@@ -152,40 +148,32 @@ defmodule Blackjack.Logic.GameLogic do
   end
 
   def player_stands(game_state) do
-    if game_state.dealer_count < 17 do
-      game_state_after_hit = hit(game_state, :dealer)
-      player_stands(game_state_after_hit)
-    else
-      new_dealer_cards =
-        List.replace_at(game_state.dealer_cards, 1, game_state.dealer_hidden_card)
+    # if game_state.dealer_count < 17 do
+    #   game_state_after_hit = hit(game_state, :dealer)
+    #   player_stands(game_state_after_hit)
+    # else
+    # new_dealer_cards =
+    #   List.replace_at(game_state.dealer_cards, 1, game_state.dealer_hidden_card)
 
-      dealer_bust = game_state.dealer_count > 21
-      player_won = dealer_bust or game_state.player_count > game_state.dealer_count
+    # dealer_bust = game_state.dealer_count > 21
+    # player_won = dealer_bust or game_state.player_count > game_state.dealer_count
 
-      Map.put(game_state, :dealer_cards, new_dealer_cards)
-      |> Map.put(:dealer_bust, dealer_bust)
-      |> Map.put(:player_won, player_won)
-      |> Map.put(:hand_over, true)
-      |> Map.put(:player_bet, 0)
-    end
+    # Map.put(game_state, :dealer_cards, new_dealer_cards)
+    # |> Map.put(:dealer_bust, dealer_bust)
+    # |> Map.put(:player_won, player_won)
+    Map.put(game_state, :hand_over, true)
+    |> Map.put(:player_stands, true)
+
+    # end
   end
 
   def check_player_bust(game_state) do
     if game_state.player_count > 21 do
       Map.put(game_state, :player_won, false)
       |> Map.put(:hand_over, true)
+      |> Map.put(:player_bust, true)
     else
       game_state
     end
   end
-
-  # def initial_deal(game_state) do
-  #   initial_deal =
-  #     hit(game_state, :player)
-  #     |> hit(:dealer)
-  #     |> hit(:player)
-  #     |> hit(:dealer)
-
-  #   initial_deal
-  # end
 end
