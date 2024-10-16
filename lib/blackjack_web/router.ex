@@ -32,6 +32,18 @@ defmodule BlackjackWeb.Router do
 
     post "/players/log_in", PlayerSessionController, :create
   end
+  
+  scope "/", BlackjackWeb do
+    pipe_through [:browser]
+
+    delete "/players/log_out", PlayerSessionController, :delete
+
+    live_session :current_player,
+    on_mount: [{BlackjackWeb.PlayerAuth, :mount_current_player}] do
+      live "/players/confirm/:token", PlayerConfirmationLive, :edit
+      live "/players/confirm", PlayerConfirmationInstructionsLive, :new
+    end
+  end
 
   scope "/", BlackjackWeb do
     pipe_through [:browser, :require_authenticated_player]
@@ -47,23 +59,12 @@ defmodule BlackjackWeb.Router do
       live "/players/:id/show/edit", PlayerLive.Show, :edit
 
       live "/tables", TableLive.Index, :index
-      live "/tables/:id", TableLive.Play, :play
       live "/tables/new", TableLive.Index, :new
+      live "/tables/:id", TableLive.Play, :play
       live "/tables/:id/edit", TableLive.Index, :edit
     end
   end
 
-  scope "/", BlackjackWeb do
-    pipe_through [:browser]
-
-    delete "/players/log_out", PlayerSessionController, :delete
-
-    live_session :current_player,
-      on_mount: [{BlackjackWeb.PlayerAuth, :mount_current_player}] do
-      live "/players/confirm/:token", PlayerConfirmationLive, :edit
-      live "/players/confirm", PlayerConfirmationInstructionsLive, :new
-    end
-  end
 
   scope "/", BlackjackWeb do
     pipe_through :browser

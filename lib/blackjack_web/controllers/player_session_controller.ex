@@ -18,9 +18,11 @@ defmodule BlackjackWeb.PlayerSessionController do
     create(conn, params, "Welcome back!")
   end
 
-  defp create(conn, %{"player" => player_params}, info) do
-    %{"login" => login, "password" => password} = player_params
-
+  defp create(
+         conn,
+         %{"player" => %{"login" => login, "password" => password} = player_params},
+         info
+       ) do
     # Check if the login is an email or a username
     player =
       if String.contains?(login, "@") do
@@ -44,7 +46,46 @@ defmodule BlackjackWeb.PlayerSessionController do
     end
   end
 
+  defp create(
+         conn,
+         %{
+           "player" => %{"email" => email, "password" => password} = player_params
+         },
+         info
+       ) do
+    # Check if the login is an email or a username
+    player = Accounts.get_player_by_email_and_password(email, password)
+
+    if player do
+      conn
+      |> put_flash(:info, info)
+      |> PlayerAuth.log_in_player(player, player_params)
+    else
+      # In order to prevent user enumeration attacks, don't disclose whether the email is registered.
+      conn
+      |> put_flash(:error, "Invalid username/email or password")
+      |> put_flash(:login, String.slice(email, 0, 160))
+      |> redirect(to: ~p"/players/log_in")
+    end
+  end
+
+  # defp do_create(conn, player, player_params, info) do
+  #   if player do
+  #     conn
+  #     |> put_flash(:info, info)
+  #     |> PlayerAuth.log_in_player(player, player_params)
+  #   else
+  #     # In order to prevent user enumeration attacks, don't disclose whether the email is registered.
+  #     conn
+  #     |> put_flash(:error, "Invalid username/email or password")
+  #     |> put_flash(:login, String.slice(login, 0, 160))
+  #     |> redirect(to: ~p"/players/log_in")
+  #   end
+  # end
+
   def delete(conn, _params) do
+    IO.inspect("hit delete")
+
     conn
     |> put_flash(:info, "Logged out successfully.")
     |> PlayerAuth.log_out_player()

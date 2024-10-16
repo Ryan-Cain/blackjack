@@ -3,7 +3,6 @@ defmodule BlackjackWeb.TableLive.Play do
 
   alias MyApp.GameRoomServer
   alias Blackjack.Games
-  alias Blackjack.Accounts
 
   @impl true
   def mount(
@@ -184,7 +183,18 @@ defmodule BlackjackWeb.TableLive.Play do
       else
         %{
           player_id: 0,
-          table_seat: 0
+          player_name: "",
+          active_move: false,
+          table_seat: 0,
+          player_bet: 0,
+          bet_placed: false,
+          player_count: 0,
+          player_ace_high_count: 0,
+          player_cards: [],
+          hand_over: false,
+          player_won: false,
+          player_bust: false,
+          player_stands: false
         }
       end
 

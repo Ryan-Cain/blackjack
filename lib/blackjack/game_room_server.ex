@@ -171,6 +171,7 @@ defmodule MyApp.GameRoomServer do
       IO.inspect(position, label: "position")
 
       broadcast_to_pubsub(:game_state_update, new_state.game_id, new_state)
+      IO.inspect(new_state, label: "new state after add player")
 
       {:noreply, new_state}
     end
@@ -550,7 +551,7 @@ defmodule MyApp.GameRoomServer do
             chip_count: player_db.chip_count + player.player_bet
           })
         else
-          if player.player_count < dealer.dealer_count do
+          if player.player_count < dealer.dealer_count or player.player_bust do
             Accounts.update_player(player_db, %{
               chip_count: player_db.chip_count - player.player_bet
             })
@@ -599,7 +600,7 @@ defmodule MyApp.GameRoomServer do
 
     new_state_reset =
       if state.game_flow.countdown == -1 or timer_up do
-        Process.send_after(self(), :next_phase, 100)
+        Process.send_after(self(), :next_phase, 1000)
 
         state_reset_countdown = put_in(state[:game_flow][:countdown], state.game_flow.timer_total)
         state_reset_timer_amount = put_in(state_reset_countdown[:game_flow][:timer_amount], 0)
@@ -609,10 +610,10 @@ defmodule MyApp.GameRoomServer do
         mult = remainder * state.game_flow.countdown
         amount = 100 - mult
 
-        IO.inspect(state.game_flow.countdown, label: "countdown")
-        IO.inspect(remainder, label: "remainder")
-        IO.inspect(mult, label: "mult")
-        IO.inspect(amount, label: "amount")
+        # IO.inspect(state.game_flow.countdown, label: "countdown")
+        # IO.inspect(remainder, label: "remainder")
+        # IO.inspect(mult, label: "mult")
+        # IO.inspect(amount, label: "amount")
         game_flow = state.game_flow
         game_flow_w_timer = Map.put(game_flow, :timer_amount, amount)
 
