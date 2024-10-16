@@ -33,7 +33,8 @@ defmodule BlackjackWeb.TableLive.Play do
          player_ace_high_count: 0,
          player_cards: [],
          hand_over: false,
-         player_won: false
+         player_won: false,
+         active_move: false
        },
        shared_game_state: game_state,
        game_id: game_id
@@ -118,13 +119,23 @@ defmodule BlackjackWeb.TableLive.Play do
     {:noreply, socket}
   end
 
-  def handle_event("add-to-bet", %{"chips" => chips}, socket) do
-    # IO.inspect(chips)
+  def handle_event(
+        "add-to-bet",
+        %{"chips" => chips},
+        %{assigns: %{current_player: current_player, table: table}} = socket
+      ) do
     {chip_value, _} = Integer.parse(chips)
-    game_state = socket.assigns.game_state
-    new_game_state = Map.put(game_state, :player_bet, game_state.player_bet + chip_value)
-    socket = assign(socket, game_state: new_game_state, sitting_at_table: true)
-    # IO.inspect(socket)
+    MyApp.GameRoomServer.adjust_bet(current_player.id, table.id, :add, chip_value)
+    {:noreply, socket}
+  end
+
+  def handle_event(
+        "remove-from-bet",
+        %{"chips" => chips},
+        %{assigns: %{current_player: current_player, table: table}} = socket
+      ) do
+    {chip_value, _} = Integer.parse(chips)
+    MyApp.GameRoomServer.adjust_bet(current_player.id, table.id, :sub, chip_value)
     {:noreply, socket}
   end
 
@@ -137,22 +148,12 @@ defmodule BlackjackWeb.TableLive.Play do
     {:noreply, socket}
   end
 
-  def handle_event("remove-from-bet", %{"chips" => chips}, socket) do
-    # IO.inspect(chips)
-    chips_parse = Integer.parse(chips)
-    chip_value = elem(chips_parse, 0)
-    game_state = socket.assigns.game_state
-    new_game_state = Map.put(game_state, :player_bet, game_state.player_bet - chip_value)
-    socket = assign(socket, game_state: new_game_state, sitting_at_table: true)
-    # IO.inspect(socket)
-    {:noreply, socket}
-  end
-
-  def handle_event("clear-bet", _, socket) do
-    game_state = socket.assigns.game_state
-    new_game_state = Map.put(game_state, :player_bet, 0)
-    socket = assign(socket, game_state: new_game_state, sitting_at_table: true)
-    # IO.inspect(socket)
+  def handle_event(
+        "clear-bet",
+        _,
+        %{assigns: %{current_player: current_player, table: table}} = socket
+      ) do
+    MyApp.GameRoomServer.clear_bet(current_player.id, table.id)
     {:noreply, socket}
   end
 

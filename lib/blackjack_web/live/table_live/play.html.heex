@@ -12,20 +12,20 @@
       <p>Table minimum: <%= @table.table_min %> chips</p>
     </div>
     <div id="game-table-msg">
-      <div id="dealer-deck">
+      <%!-- <div id="dealer-deck">
         <img class="w-12" src="/images/cards/BACK.png" alt="" />
-      </div>
+      </div> --%>
     </div>
     <div id="player-info">
       <ul class="relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
         <%= if @current_player do %>
-          <li class="text-[0.8125rem] leading-6 text-zinc-900">
+          <li class="text-[0.8125rem] leading-6">
             <%= @current_player.email %>
           </li>
           <li>
             <.link
               href={~p"/players/settings"}
-              class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
+              class="text-[0.8125rem] leading-6 font-semibold hover:text-zinc-700"
             >
               Settings
             </.link>
@@ -34,7 +34,7 @@
             <.link
               href={~p"/players/log_out"}
               method="delete"
-              class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
+              class="text-[0.8125rem] leading-6 font-semibold hover:text-zinc-700"
             >
               Log out
             </.link>
@@ -43,8 +43,7 @@
       </ul>
       <%= if @current_player do %>
         <div>
-          <span>Total Chips: <%= @current_player.chip_count %></span>
-          <span>| Table Chips: <%= @current_player.chip_count - @game_state.player_bet %></span>
+          <span>My Chips: <%= @current_player.chip_count %></span>
         </div>
       <% end %>
     </div>
@@ -59,56 +58,87 @@
           alt=""
         />
       </div>
-      <h3><%= @shared_game_state.dealer.dealer_count %></h3>
     </section>
     <section id="other-players">
       <div>
-        <div id="pick-a-seat" class="flex justify-around ">
-          <button phx-click="sit_at_table" phx-value-seat="5">
-            Seat 1
-          </button>
-          <button phx-click="sit_at_table" phx-value-seat="4">
-            Seat 2
-          </button>
-          <button phx-click="sit_at_table" phx-value-seat="3">
-            Seat 3
-          </button>
-          <button phx-click="sit_at_table" phx-value-seat="2">
-            Seat 4
-          </button>
-          <button phx-click="sit_at_table" phx-value-seat="1">
-            Seat 5
-          </button>
-        </div>
         <div id="table-seats" class="h-28 flex flex-row-reverse justify-around items-end">
-          <div :for={player <- @shared_game_state.players} class="player-mini-disp">
-            <div :if={player.table_seat == 0}>
-              Empty
-            </div>
-            <div :if={player.table_seat > 0}>
-              <h3>
-                <%= player.player_name %>
-              </h3>
-              <p>
-                Bet: <%= player.player_bet %> chips
-              </p>
-              <p>
-                Table seat: <%= player.table_seat %>
-              </p>
-              <p>
-                Active move: <%= player.active_move %>
-              </p>
-              <div class="flex justify-center relative other-player-cards">
-                <div :for={card <- player.player_cards} class="w-12 relative">
-                  <img class="h-24 move-card" src={"/images/cards/#{card}.png"} alt="" />
+          <%= for {player, index} <- Enum.with_index(@shared_game_state.players) do %>
+            <%!-- <div :for={player <- @shared_game_state.players} class="player-mini-disp"> --%>
+            <div class="player-mini-disp">
+              <div :if={player.table_seat == 0}>
+                <button phx-click="sit_at_table" phx-value-seat={index + 1}>
+                  Empty Seat
+                </button>
+              </div>
+
+              <div :if={player.table_seat > 0}>
+                <div
+                  :if={@shared_game_state.game_flow.phase != "reset" and @game_state.active_move}
+                  class="timer relative size-20"
+                >
+                  <svg
+                    class="size-full -rotate-90"
+                    viewBox="0 0 36 36"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <!-- Background Circle -->
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="16"
+                      fill="none"
+                      class="stroke-current text-gray-200 dark:text-neutral-700"
+                      stroke-width="2"
+                    >
+                    </circle>
+                    <!-- Progress Circle -->
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="16"
+                      fill="none"
+                      class="stroke-current text-blue-600 dark:text-blue-500"
+                      stroke-width="2"
+                      stroke-dasharray="100"
+                      stroke-dashoffset={@shared_game_state.game_flow.timer_amount}
+                      stroke-linecap="round"
+                    >
+                    </circle>
+                  </svg>
+                  <!-- Percentage Text -->
+                  <div class="absolute top-1/2 start-1/2 transform -translate-y-1/2 -translate-x-1/2">
+                    <%!-- <span class="text-center text-2xl font-bold text-blue-600 dark:text-blue-500">
+            <%= @shared_game_state.game_flow.timer_amount %>
+          </span> --%>
+                    <span class="text-center text-2xl font-bold text-blue-600 dark:text-blue-500">
+                      <%= @shared_game_state.game_flow.countdown %>
+                    </span>
+                  </div>
+                </div>
+                <h3>
+                  <%= player.player_name %>
+                </h3>
+                <p>
+                  Bet: <%= player.player_bet %> chips
+                </p>
+                <p>
+                  Table seat: <%= player.table_seat %>
+                </p>
+                <p>
+                  Active move: <%= player.active_move %>
+                </p>
+                <div class="flex justify-center relative other-player-cards">
+                  <div :for={card <- player.player_cards} class="w-12 relative">
+                    <img class="h-24 move-card" src={"/images/cards/#{card}.png"} alt="" />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          <% end %>
         </div>
       </div>
     </section>
-    <section id="player" style={"background-color: #{@table.table_color}"}>
+    <section id="player">
       <div class="flex justify-center">
         <div class="flex items-end justify-start w-96" id="player-cards">
           <div :for={card <- @game_state.player_cards} class="relative h-36 w-8">
@@ -247,13 +277,6 @@
           >
             All In
           </button>
-          <button
-            :if={@current_player.chip_count > @table.table_min}
-            phx-click="bet-minimum"
-            class="game-option-btn"
-          >
-            Minimum
-          </button>
           <button :if={@game_state.player_bet > 0} phx-click="clear-bet" class="game-option-btn">
             Clear Bet
           </button>
@@ -273,6 +296,7 @@
         </div>
       </div>
       <%!-- This is a "Preline" tailwind progress circle component - https://preline.co/docs/progress.html --%>
+      <%!-- <div :if={@shared_game_state.game_flow.phase == "reset"} class="timer relative size-20"> --%>
       <div class="timer relative size-20">
         <svg class="size-full -rotate-90" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
           <!-- Background Circle -->
@@ -313,7 +337,7 @@
         <p>Current Bet: <%= @game_state.player_bet %></p>
         <%!-- <p>Hand Card Count: <%= @game_state.player_count %></p> --%>
         <%!-- <p>Seat: <%= @game_state.table_seat %></p> --%>
-        <p>First game: <%= @shared_game_state.game_flow.first_game %></p>
+        <p>First hand: <%= @shared_game_state.game_flow.first_hand %></p>
         <p>Active seat: <%= @shared_game_state.game_flow.active_seat %></p>
         <p>Phase: <%= @shared_game_state.game_flow.phase %></p>
       </div>

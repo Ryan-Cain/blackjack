@@ -32,7 +32,7 @@ defmodule BlackjackWeb.Router do
 
     post "/players/log_in", PlayerSessionController, :create
   end
-  
+
   scope "/", BlackjackWeb do
     pipe_through [:browser]
 
@@ -50,8 +50,8 @@ defmodule BlackjackWeb.Router do
 
     live_session :require_authenticated_player,
       on_mount: [{BlackjackWeb.PlayerAuth, :ensure_authenticated}] do
+        live "/players/settings", PlayerSettingsLive, :edit
       live "/players/:id", PlayerLive.Show, :show
-      live "/players/settings", PlayerSettingsLive, :edit
       live "/players/settings/confirm_email/:token", PlayerSettingsLive, :confirm_email
       live "/tables/:id/players/:user_id", TableLive.Play, :play
       live "/players/:id/edit", PlayerLive.Index, :edit

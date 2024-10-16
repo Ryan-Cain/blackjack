@@ -1,6 +1,6 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
 
 /* This file is for your main application CSS */
 html {
@@ -66,6 +66,7 @@ html {
 }
 .player-mini-disp > div {
   border: 3px solid white;
+  border-radius: 10px;
   width: 200px;
   height: 150px;
 }
@@ -74,6 +75,9 @@ html {
 }
 .player-mini-disp:nth-of-type(2) > div {
   transform: rotateZ(-12deg);
+}
+.player-mini-disp:nth-of-type(3) > div {
+  transform: rotateZ(0deg);
 }
 .player-mini-disp:nth-of-type(4) > div {
   transform: rotateZ(12deg);
@@ -98,7 +102,7 @@ main {
 }
 #table-page {
   height: 100vh;
-  background-image: url("/images/green_felt2.jpg");
+  background-image: url('/images/green_felt2.jpg');
   background-position: center; /* Center the image */
   background-repeat: no-repeat; /* Do not repeat the image */
   background-size: cover; /* Resize the background image to cover the entire container */
@@ -108,11 +112,16 @@ main {
 }
 body {
   height: 100vh;
-  background-image: url("/images/card_bg.jpg");
+  background-image: url('/images/card_bg.jpg');
   background-position: center; /* Center the image */
   background-repeat: no-repeat; /* Do not repeat the image */
   background-size: cover; /* Resize the background image to cover the entire container */
-  color: white;
+  color: white !important;
+}
+td,
+tr,
+th {
+  color: white !important;
 }
 .welcome-message h1 {
   font-size: 60px;
@@ -132,7 +141,7 @@ body {
   -ms-high-contrast-adjust: none !important;
 }
 #login-reg-form {
-  background-image: url("/images/green_felt.jpg");
+  background-image: url('/images/green_felt.jpg');
   background-position: center; /* Center the image */
   background-repeat: no-repeat; /* Do not repeat the image */
   background-size: cover; /* Resize the background image to cover the entire container */
@@ -168,8 +177,18 @@ body {
   left: 50%;
   width: 35px;
   height: 50px;
-  background: url("/images/cards/BACK.png") no-repeat center/cover;
+  background: url('/images/cards/BACK.png') no-repeat center/cover;
   transform: translate(-50%, -50%); /* Center the deck */
+}
+#dealer {
+  height: 100px;
+}
+#dealer-cards {
+  margin-top: 30px;
+  position: absolute;
+  top: -25px;
+  left: 50vw;
+  transform: translateX(-50%);
 }
 
 .other-player-cards > div img {
